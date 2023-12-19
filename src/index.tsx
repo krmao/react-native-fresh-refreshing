@@ -76,11 +76,7 @@ const RefreshableWrapper: React.FC<Props> = ({
       'worklet';
       isLoaderActive.value = loaderOffsetY.value > 0;
 
-      if (
-        ((listContentOffsetY.value <= 0 && event.velocityY >= 0) ||
-          isLoaderActive.value) &&
-        !isRefreshing.value
-      ) {
+      if (((listContentOffsetY.value <= 0 && event.velocityY >= 0) || isLoaderActive.value) && !isRefreshing.value) {
         loaderOffsetY.value = event.translationY;
       }
     })
@@ -114,12 +110,7 @@ const RefreshableWrapper: React.FC<Props> = ({
         ? [
             {
               translateY: isLoaderActive.value
-                ? interpolate(
-                    loaderOffsetY.value,
-                    [0, refreshHeight - 20],
-                    [-10, 10],
-                    Extrapolation.CLAMP
-                  )
+                ? interpolate(loaderOffsetY.value, [0, refreshHeight - 20], [-10, 10], Extrapolation.CLAMP)
                 : withTiming(-10),
             },
             {
@@ -137,12 +128,7 @@ const RefreshableWrapper: React.FC<Props> = ({
           translateY: isLoaderActive.value
             ? isRefreshing.value
               ? withTiming(refreshHeight)
-              : interpolate(
-                  loaderOffsetY.value,
-                  [0, refreshHeight],
-                  [0, refreshHeight],
-                  Extrapolation.CLAMP
-                )
+              : interpolate(loaderOffsetY.value, [0, refreshHeight], [0, refreshHeight], Extrapolation.CLAMP)
             : withTiming(0),
         },
       ],
@@ -150,19 +136,20 @@ const RefreshableWrapper: React.FC<Props> = ({
   });
 
   return (
-    <View style={styles.flex}>
-      <Animated.View style={[styles.loaderContainer, loaderAnimation]}>
+    <View style={styles.container}>
+      {/*刷新头部组件*/}
+      <Animated.View style={[styles.headerContainer, loaderAnimation]}>
         {typeof Loader === 'function' ? <Loader /> : Loader}
       </Animated.View>
 
+      {/*处理本组件自身的 overscroll 手势*/}
       <GestureDetector gesture={panGesture}>
-        <Animated.View style={[styles.flex, overscrollAnimation]}>
+        {/*携带 children 元素的容器, 容器本身支持 overscrollAnimation 动画*/}
+        <Animated.View style={[styles.container, overscrollAnimation]}>
+          {/*作为中间层兼容 children 自身的手势(比如 ScrollView 的自身滚动)和本组件自身的 overscroll 手势*/}
           <GestureDetector gesture={Gesture.Simultaneous(panGesture, native)}>
-            {children &&
-              React.cloneElement(children, {
-                onScroll: onScroll,
-                bounces: bounces,
-              })}
+            {/*复制并生成新的 children 元素并额外支持 onScroll、bounces 两个属性*/}
+            {children && React.cloneElement(children, { onScroll: onScroll, bounces: bounces })}
           </GestureDetector>
         </Animated.View>
       </GestureDetector>
@@ -171,15 +158,8 @@ const RefreshableWrapper: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  contenContainer: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    paddingBottom: 100,
-  },
-  loaderContainer: {
+  container: { flex: 1 },
+  headerContainer: {
     position: 'absolute',
     alignItems: 'center',
     width: '100%',

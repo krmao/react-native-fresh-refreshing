@@ -1,11 +1,5 @@
 import * as React from 'react';
-import {
-  Dimensions,
-  FlatList,
-  FlatListProps,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Dimensions, FlatList, FlatListProps, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import RefreshableWrapper from '../../src';
@@ -15,8 +9,7 @@ import DefaultLoader from './components/DefaultLoader';
 
 type Item = string;
 
-const AnimatedFlatlist =
-  Animated.createAnimatedComponent<FlatListProps<Item>>(FlatList);
+const AnimatedFlatlist = Animated.createAnimatedComponent<FlatListProps<Item>>(FlatList);
 
 const { width } = Dimensions.get('screen');
 
@@ -56,7 +49,7 @@ export default function App() {
               return <ListItem item={item} />;
             }}
             style={styles.scrollList}
-            contentContainerStyle={styles.contenContainer}
+            contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
             scrollEventThrottle={16}
             ListEmptyComponent={() => <EmptyComponent />}
@@ -78,7 +71,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   header: { width, height: 100, backgroundColor: 'grey' },
-  contenContainer: {
+  contentContainer: {
     paddingVertical: 10,
     paddingHorizontal: 16,
     paddingBottom: 100,
