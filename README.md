@@ -1,22 +1,10 @@
 # react-native-fresh-refreshing
 
-react-native-fresh-refreshing
+Based on [react-native-fresh-refresh](https://github.com/4TWIGGERS/), research some new features.
 
 ## Installation
 
-```sh
-npm install react-native-fresh-refreshing
-```
-
 ## Usage
-
-```js
-import { multiply } from 'react-native-fresh-refreshing';
-
-// ...
-
-const result = await multiply(3, 7);
-```
 
 ## Contributing
 
