@@ -46,6 +46,7 @@ const RefreshableWrapper: React.FC<Props> = ({
 
   // 正在刷新->固定位置到 refreshHeight / 完成刷新->回弹到 0
   const isRefreshing = useSharedValue(false);
+  //下拉/回退的位移值
   const loaderOffsetY = useSharedValue(0);
   const listContentOffsetY = useSharedValue(0);
   const isLoaderActive = useSharedValue(false);
@@ -81,6 +82,7 @@ const RefreshableWrapper: React.FC<Props> = ({
   //endregion
 
   //region 共享 loaderOffsetY, 当 loaderOffsetY 值改变时触发回调 updater 函数
+  //当位移值发生改变时, 无法是下拉还是回退, 通过 props.contentOffset 反应到外部, 供组件外部使用
   //https://docs.swmansion.com/react-native-reanimated/docs/core/useDerivedValue
   useDerivedValue(() => {
     if (contentOffset) {
@@ -134,8 +136,23 @@ const RefreshableWrapper: React.FC<Props> = ({
 
   //region 下拉手势
   const panGesture = Gesture.Pan()
+    .maxPointers(2)
+    .onBegin((_event) => {
+      'worklet';
+      console.log('-- onBegin');
+    })
+
+    .onStart((_event) => {
+      'worklet';
+      console.log('-- onStart');
+    })
+    .onUpdate((_event) => {
+      'worklet';
+      console.log('-- onUpdate');
+    })
     .onChange((event) => {
       'worklet';
+      console.log('-- onChange');
       isLoaderActive.value = loaderOffsetY.value > 0;
 
       if (((listContentOffsetY.value <= 0 && event.velocityY >= 0) || isLoaderActive.value) && !isRefreshing.value) {
@@ -144,6 +161,7 @@ const RefreshableWrapper: React.FC<Props> = ({
     })
     .onEnd(() => {
       'worklet';
+      console.log('-- onEnd');
       if (!isRefreshing.value) {
         if (loaderOffsetY.value >= refreshHeight && !isRefreshing.value) {
           isRefreshing.value = true;
@@ -153,8 +171,34 @@ const RefreshableWrapper: React.FC<Props> = ({
           loaderOffsetY.value = withTiming(0);
         }
       }
+    })
+
+    .onFinalize((_event) => {
+      'worklet';
+      console.log('-- onFinalize');
+    })
+
+    //region touches
+    .onTouchesDown((_event, _stateManager) => {
+      'worklet';
+      console.log('------ onTouchesDown');
+    })
+    .onTouchesMove((_event) => {
+      'worklet';
+      console.log('------ onTouchesMove');
+    })
+    .onTouchesUp((_event) => {
+      'worklet';
+      console.log('------ onTouchesUp');
+    })
+    // onTouchesCancelled -> onFinalize -> onStart
+    .onTouchesCancelled((_event) => {
+      'worklet';
+      console.log('------ onTouchesCancelled');
     });
-  //endregion
+  //endregion touches
+
+  //endregion 下拉手势
 
   //region 设置手势的触摸区域
   if (hitSlop !== undefined) {
