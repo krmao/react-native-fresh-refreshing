@@ -43,6 +43,10 @@ export default function App() {
           <AnimatedFlatlist
             data={listData}
             bounces={false}
+            bouncesZoom={false}
+            alwaysBounceVertical={false}
+            alwaysBounceHorizontal={false}
+            fadingEdgeLength={0}
             overScrollMode={'never'}
             keyExtractor={(item: string) => item}
             renderItem={({ item }) => {
