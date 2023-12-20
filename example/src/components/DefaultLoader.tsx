@@ -1,11 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSpring } from 'react-native-reanimated';
 
 export default function DefaultLoader() {
   const rotateValue = useSharedValue(0);
@@ -16,10 +11,7 @@ export default function DefaultLoader() {
 
   const rotateStyles = useAnimatedStyle(() => {
     return {
-      transform: [
-        { rotate: handleRotation(rotateValue) },
-        { scale: rotateValue.value + 0.3 },
-      ],
+      transform: [{ rotate: handleRotation(rotateValue) }, { scale: rotateValue.value + 0.3 }],
       opacity: rotateValue.value + 0.2,
       borderRadius: rotateValue.value * 20,
     };
@@ -27,7 +19,7 @@ export default function DefaultLoader() {
 
   useEffect(() => {
     rotateValue.value = withRepeat(withSpring(0.5), -1, true);
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return <Animated.View style={[styles.loader, rotateStyles]} />;

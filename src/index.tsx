@@ -22,7 +22,7 @@ interface Props {
   defaultAnimationEnabled?: boolean;
   contentOffset?: Animated.SharedValue<number>;
   children: JSX.Element;
-  Loader?: () => JSX.Element;
+  Loader?: JSX.Element | (() => JSX.Element);
   bounces?: boolean;
   hitSlop?: HitSlop;
   managedLoading?: boolean;
@@ -40,9 +40,11 @@ const RefreshableWrapper: React.FC<Props> = ({
   hitSlop,
   managedLoading = false,
 }) => {
-  //region 当组件卸载是会自动取消动画, 防止内存泄露, 改变时在UI线程执行
+  //region 当组件卸载时会自动执行 cancelAnimation 取消与共享值配对的正在运行的动画, 防止内存泄露, 改变时在UI线程执行
   //https://github.com/software-mansion/react-native-reanimated/blob/a898b3efcb3163ee2579ca7c4076fa76d74aac93/src/reanimated2/hook/useSharedValue.ts#L14
   //https://github.com/software-mansion/react-native-reanimated/blob/a898b3efcb3163ee2579ca7c4076fa76d74aac93/src/reanimated2/mutables.ts
+
+  // 正在刷新->固定位置到 refreshHeight / 完成刷新->回弹到 0
   const isRefreshing = useSharedValue(false);
   const loaderOffsetY = useSharedValue(0);
   const listContentOffsetY = useSharedValue(0);
