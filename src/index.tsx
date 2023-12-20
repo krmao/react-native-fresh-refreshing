@@ -40,11 +40,16 @@ const RefreshableWrapper: React.FC<Props> = ({
   hitSlop,
   managedLoading = false,
 }) => {
+  //region 当组件卸载是会自动取消动画, 防止内存泄露, 改变时在UI线程执行
+  //https://github.com/software-mansion/react-native-reanimated/blob/a898b3efcb3163ee2579ca7c4076fa76d74aac93/src/reanimated2/hook/useSharedValue.ts#L14
+  //https://github.com/software-mansion/react-native-reanimated/blob/a898b3efcb3163ee2579ca7c4076fa76d74aac93/src/reanimated2/mutables.ts
   const isRefreshing = useSharedValue(false);
   const loaderOffsetY = useSharedValue(0);
   const listContentOffsetY = useSharedValue(0);
   const isLoaderActive = useSharedValue(false);
+  //endregion
 
+  //region 当刷新状态改变, 即 开始刷新/完成刷新 时回调
   useEffect(() => {
     if (!isLoading) {
       loaderOffsetY.value = withTiming(0);
@@ -57,20 +62,75 @@ const RefreshableWrapper: React.FC<Props> = ({
       isRefreshing.value = true;
       isLoaderActive.value = true;
     }
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
+  //endregion
 
+  //region 返回一个可以被可滚动组件使用的事件处理程序的引用, 非主JS线程('worklet')执行回调, 提升性能
+  //https://docs.swmansion.com/react-native-reanimated/docs/scroll/useAnimatedScrollHandler
+  //https://github.com/software-mansion/react-native-reanimated/blob/a898b3efcb3163ee2579ca7c4076fa76d74aac93/src/reanimated2/hook/useAnimatedScrollHandler.ts#L46
   const onScroll = useAnimatedScrollHandler((event: NativeScrollEvent) => {
-    const y = event.contentOffset.y;
-    listContentOffsetY.value = y;
+    listContentOffsetY.value = event.contentOffset.y;
     // recover children component onScroll event
     if (children.props.onScroll) {
       runOnJS(children.props.onScroll)(event);
     }
   });
+  //endregion
 
+  //region 共享 loaderOffsetY, 当 loaderOffsetY 值改变时触发回调 updater 函数
+  //https://docs.swmansion.com/react-native-reanimated/docs/core/useDerivedValue
+  useDerivedValue(() => {
+    if (contentOffset) {
+      contentOffset.value = loaderOffsetY.value;
+    }
+  }, [loaderOffsetY]);
+  //endregion
+
+  //region header 动画样式, 当共享值发生改变时, 动画组件 animated style 会自动更新形成动画
+  //https://docs.swmansion.com/react-native-reanimated/docs/core/useAnimatedStyle/
+  const loaderAnimation = useAnimatedStyle(() => {
+    return {
+      height: refreshHeight,
+      transform: defaultAnimationEnabled
+        ? [
+            {
+              translateY: isLoaderActive.value
+                ? interpolate(loaderOffsetY.value, [0, refreshHeight - 20], [-10, 10], Extrapolation.CLAMP)
+                : withTiming(-10),
+            },
+            {
+              scale: isLoaderActive.value ? withSpring(1) : withTiming(0.01),
+            },
+          ]
+        : undefined,
+    };
+  });
+  //endregion
+
+  //region 下拉越界动画, 回弹动画
+  const overscrollAnimation = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateY: isLoaderActive.value
+            ? isRefreshing.value
+              ? withTiming(refreshHeight)
+              : interpolate(loaderOffsetY.value, [0, refreshHeight], [0, refreshHeight], Extrapolation.CLAMP)
+            : withTiming(0),
+        },
+      ],
+    };
+  });
+  //endregion
+
+  //region 下拉手势与手势兼容
+
+  //region 可滚动子组件的手势
   const native = Gesture.Native();
+  //endregion
 
+  //region 下拉手势
   const panGesture = Gesture.Pan()
     .onChange((event) => {
       'worklet';
@@ -92,48 +152,15 @@ const RefreshableWrapper: React.FC<Props> = ({
         }
       }
     });
+  //endregion
 
+  //region 设置手势的触摸区域
   if (hitSlop !== undefined) {
     panGesture.hitSlop(hitSlop);
   }
+  //endregion
 
-  useDerivedValue(() => {
-    if (contentOffset) {
-      contentOffset.value = loaderOffsetY.value;
-    }
-  }, [loaderOffsetY]);
-
-  const loaderAnimation = useAnimatedStyle(() => {
-    return {
-      height: refreshHeight,
-      transform: defaultAnimationEnabled
-        ? [
-            {
-              translateY: isLoaderActive.value
-                ? interpolate(loaderOffsetY.value, [0, refreshHeight - 20], [-10, 10], Extrapolation.CLAMP)
-                : withTiming(-10),
-            },
-            {
-              scale: isLoaderActive.value ? withSpring(1) : withTiming(0.01),
-            },
-          ]
-        : undefined,
-    };
-  });
-
-  const overscrollAnimation = useAnimatedStyle(() => {
-    return {
-      transform: [
-        {
-          translateY: isLoaderActive.value
-            ? isRefreshing.value
-              ? withTiming(refreshHeight)
-              : interpolate(loaderOffsetY.value, [0, refreshHeight], [0, refreshHeight], Extrapolation.CLAMP)
-            : withTiming(0),
-        },
-      ],
-    };
-  });
+  //endregion
 
   return (
     <View style={styles.container}>

@@ -5,7 +5,6 @@ import Animated, { useSharedValue } from 'react-native-reanimated';
 import RefreshableWrapper from '../../src';
 import EmptyComponent from './components/EmptyComponent';
 import ListItem from './components/ListItem';
-import DefaultLoader from './components/DefaultLoader';
 
 type Item = string;
 
@@ -35,7 +34,7 @@ export default function App() {
         <View style={styles.header} />
         <RefreshableWrapper
           contentOffset={contentOffset}
-          Loader={() => <DefaultLoader />}
+          // Loader={() => <DefaultLoader />}
           isLoading={isLoading}
           onRefresh={() => {
             refreshSimulationHandler();
