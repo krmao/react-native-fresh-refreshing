@@ -36,6 +36,7 @@ export default function App() {
           contentOffset={contentOffset}
           Loader={<DefaultLoader />}
           isLoading={isLoading}
+          defaultAnimationEnabled={true}
           onRefresh={() => {
             refreshSimulationHandler();
           }}

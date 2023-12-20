@@ -3,6 +3,7 @@ import { NativeScrollEvent, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import DefaultLoader from './loader';
 import Animated, {
+  cancelAnimation,
   Extrapolation,
   interpolate,
   runOnJS,
@@ -31,7 +32,7 @@ interface Props {
 const RefreshableWrapper: React.FC<Props> = ({
   isLoading,
   onRefresh,
-  refreshHeight = 100,
+  refreshHeight = 300,
   defaultAnimationEnabled,
   contentOffset,
   children,
@@ -50,6 +51,9 @@ const RefreshableWrapper: React.FC<Props> = ({
   const loaderOffsetY = useSharedValue(0);
   const listContentOffsetY = useSharedValue(0);
   const isLoaderActive = useSharedValue(false);
+  const overscrollTranslateY = useSharedValue(0);
+  const headerTranslateY = useSharedValue(0);
+  const headerScale = useSharedValue(0);
   //endregion
 
   //region 当刷新状态改变, 即 开始刷新/完成刷新 时回调
@@ -99,12 +103,10 @@ const RefreshableWrapper: React.FC<Props> = ({
       transform: defaultAnimationEnabled
         ? [
             {
-              translateY: isLoaderActive.value
-                ? interpolate(loaderOffsetY.value, [0, refreshHeight - 20], [-10, 10], Extrapolation.CLAMP)
-                : withTiming(-10),
+              translateY: headerTranslateY.value,
             },
             {
-              scale: isLoaderActive.value ? withSpring(1) : withTiming(0.01),
+              scale: headerScale.value,
             },
           ]
         : undefined,
@@ -112,16 +114,30 @@ const RefreshableWrapper: React.FC<Props> = ({
   });
   //endregion
 
+  useDerivedValue(() => {
+    headerTranslateY.value = isLoaderActive.value
+      ? interpolate(loaderOffsetY.value, [0, refreshHeight - 20], [-10, 10], Extrapolation.CLAMP)
+      : withTiming(-10);
+  }, [isLoaderActive, loaderOffsetY]);
+
+  useDerivedValue(() => {
+    headerScale.value = isLoaderActive.value ? withSpring(1) : withTiming(0.01);
+  }, [isLoaderActive]);
+
+  useDerivedValue(() => {
+    overscrollTranslateY.value = isLoaderActive.value
+      ? isRefreshing.value
+        ? withTiming(refreshHeight)
+        : interpolate(loaderOffsetY.value, [0, refreshHeight], [0, refreshHeight], Extrapolation.CLAMP)
+      : withTiming(0);
+  }, [isLoaderActive, isRefreshing, loaderOffsetY]);
+
   //region 下拉越界动画, 回弹动画
   const overscrollAnimation = useAnimatedStyle(() => {
     return {
       transform: [
         {
-          translateY: isLoaderActive.value
-            ? isRefreshing.value
-              ? withTiming(refreshHeight)
-              : interpolate(loaderOffsetY.value, [0, refreshHeight], [0, refreshHeight], Extrapolation.CLAMP)
-            : withTiming(0),
+          translateY: overscrollTranslateY.value,
         },
       ],
     };
@@ -134,12 +150,21 @@ const RefreshableWrapper: React.FC<Props> = ({
   const native = Gesture.Native();
   //endregion
 
+  const stopAnimation = () => {
+    cancelAnimation(overscrollTranslateY);
+    cancelAnimation(headerTranslateY);
+    cancelAnimation(headerScale);
+  };
+
   //region 下拉手势
   const panGesture = Gesture.Pan()
     .maxPointers(2)
     .onBegin((_event) => {
       'worklet';
       console.log('-- onBegin');
+      runOnJS(() => {
+        stopAnimation();
+      });
     })
 
     .onStart((_event) => {
