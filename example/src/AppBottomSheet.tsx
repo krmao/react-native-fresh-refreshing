@@ -1,7 +1,21 @@
-import React, { useRef } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { Gesture, GestureDetector, gestureHandlerRootHOC, ScrollView } from 'react-native-gesture-handler';
+import React, { RefAttributes, useRef } from 'react';
+import {
+  Pressable,
+  ScrollView as RNScrollView,
+  ScrollViewProps as RNScrollViewProps,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import {
+  Gesture,
+  GestureDetector,
+  gestureHandlerRootHOC,
+  ScrollView as RNGHScrollView,
+} from 'react-native-gesture-handler';
 import Animated, {
+  AnimateProps,
   interpolate,
   runOnJS,
   useAnimatedProps,
@@ -10,17 +24,20 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { NativeViewGestureHandlerProps } from 'react-native-gesture-handler/src/handlers/NativeViewGestureHandler';
 
 // https://github.com/software-mansion/react-native-gesture-handler/issues/420#issuecomment-1356861934
 // https://snack.expo.dev/@himanshu266/bottom-sheet-scrollview
 
-const AScrollView = Animated.createAnimatedComponent<any>(ScrollView);
+type AnimatedScrollViewProps = RNScrollViewProps & NativeViewGestureHandlerProps & RefAttributes<RNScrollView>;
+const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollViewProps>> =
+  Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
 
 function App() {
   const { width, height } = useWindowDimensions();
   const open = height * 0.1;
   const closed = height * 0.6;
-  const scrollRef = useRef<ScrollView>();
+  const animatedScrollViewRef = useRef<RNGHScrollView>(null);
 
   const moving = useSharedValue(false);
   const prevY = useSharedValue(closed);
@@ -51,7 +68,7 @@ function App() {
 
       // simulate scroll if user continues touching screen
       if (prevY.value !== open && transY.value < open) {
-        const scrollTo = scrollRef?.current?.scrollTo;
+        const scrollTo = animatedScrollViewRef?.current?.scrollTo;
         if (scrollTo) {
           runOnJS(scrollTo)({ y: -transY.value + open, animated: false });
         }
@@ -78,7 +95,7 @@ function App() {
       moving.value = false;
       movedY.value = 0;
     })
-    .simultaneousWithExternalGesture(scrollRef);
+    .simultaneousWithExternalGesture(animatedScrollViewRef);
 
   const scrollViewProps = useAnimatedProps(() => ({
     // only scroll if sheet is open
@@ -146,8 +163,6 @@ function App() {
     },
   });
 
-  // @ts-ignore
-  // @ts-ignore
   return (
     <View style={styles.screen}>
       <GestureDetector gesture={gesture}>
@@ -158,8 +173,8 @@ function App() {
               <Text style={styles.title}>Header</Text>
             </View>
 
-            <AScrollView
-              ref={scrollRef}
+            <AnimatedScrollView
+              ref={animatedScrollViewRef}
               scrollEventThrottle={1}
               onScroll={scrollHandler}
               bounces={false}
@@ -172,11 +187,17 @@ function App() {
               contentContainerStyle={styles.scrollViewContainer}
             >
               {[...Array(20).keys()].map((i) => (
-                <Pressable key={i} style={styles.button} onPress={() => {}}>
+                <Pressable
+                  key={i}
+                  style={styles.button}
+                  onPress={() => {
+                    console.log('--', i);
+                  }}
+                >
                   <Text>Scroll Content {i + 1}</Text>
                 </Pressable>
               ))}
-            </AScrollView>
+            </AnimatedScrollView>
           </View>
         </Animated.View>
       </GestureDetector>
