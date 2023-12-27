@@ -38,75 +38,126 @@ function App() {
   let { width, height } = useWindowDimensions();
   height = Dimensions.get('screen').height; // test
 
-  const open = height * 0.0; // 0.1
-  const closed = height * 0.9; // 0.6
-  const animatedScrollViewRef = useRef<RNGHScrollView>(null);
+  const STATUS_CURRENT_PAGE = 0; // 默认状态
+  const STATUS_CURRENT_PAGE_HEADER_LOADING = 100; // header 加载中
+  const STATUS_NEXT_PAGE = height * 0.8; // 下一页
 
-  const moving = useSharedValue(false);
-  const prevY = useSharedValue(open);
-  const transY = useSharedValue(open);
-  const movedY = useSharedValue(0);
-  const scrollY = useSharedValue(0);
+  const animatedScrollViewRef = useRef<RNGHScrollView>(null);
+  const testCount = useRef<number>(0);
+
+  const preStatus = useSharedValue(STATUS_CURRENT_PAGE);
+
+  const isTouching = useSharedValue(false);
+  // 当前 page 实时整体页面位移值
+  // 手指触摸移动以及松开手指还原状态时通过改变这个值达到动画位移的效果
+  const currentPageTranslationY = useSharedValue(STATUS_CURRENT_PAGE);
+  // scrollView 手指触摸时内部内容滚动的实时位移值
+  const currentPageNestedChildTouchingOffset = useSharedValue(0);
+  // scrollView 的实时内部内容滚动值
+  const currentPageNestedChildScrollY = useSharedValue(0);
 
   // scroll handler for scrollview
   const scrollHandler = useAnimatedScrollHandler(({ contentOffset }) => {
-    scrollY.value = Math.round(contentOffset.y);
+    currentPageNestedChildScrollY.value = Math.round(contentOffset.y);
   });
+
+  const finishHeaderLoading = (goToNextPage: boolean = false) => {
+    if (goToNextPage) {
+      if (currentPageTranslationY.value !== STATUS_NEXT_PAGE) {
+        currentPageTranslationY.value = withTiming(STATUS_NEXT_PAGE, { duration: 200 });
+      }
+      if (preStatus.value !== STATUS_NEXT_PAGE) {
+        preStatus.value = STATUS_NEXT_PAGE;
+      }
+    } else {
+      if (currentPageTranslationY.value !== STATUS_CURRENT_PAGE) {
+        currentPageTranslationY.value = withTiming(STATUS_CURRENT_PAGE, { duration: 200 });
+      }
+      if (preStatus.value !== STATUS_CURRENT_PAGE) {
+        preStatus.value = STATUS_CURRENT_PAGE;
+      }
+    }
+  };
+
+  const handleHeaderLoading = () => {
+    setTimeout(() => {
+      finishHeaderLoading(testCount.current % 2 === 0);
+      testCount.current++;
+    }, 1500);
+  };
 
   // pan handler for sheet
   const gesture = Gesture.Pan()
     .onBegin(() => {
       // touching screen
-      moving.value = true;
+      isTouching.value = true;
     })
     .onUpdate((e) => {
       // move sheet if top or scrollview or is closed state
-      if (scrollY.value === 0 || prevY.value === closed) {
-        transY.value = prevY.value + e.translationY - movedY.value;
-
+      if (currentPageNestedChildScrollY.value === 0 || preStatus.value === STATUS_NEXT_PAGE) {
+        // current page changing translationY
+        currentPageTranslationY.value = preStatus.value + e.translationY - currentPageNestedChildTouchingOffset.value;
+        console.log('-- 页面正在位移', e.translationY);
         // capture movement, but don't move sheet
       } else {
-        movedY.value = e.translationY;
+        // current page child scrollview nested scroll
+        currentPageNestedChildTouchingOffset.value = e.translationY;
+        console.log(
+          '-- ScrollView 内部滚动',
+          currentPageNestedChildTouchingOffset.value,
+          currentPageNestedChildScrollY.value
+        );
       }
 
       // simulate scroll if user continues touching screen
-      if (prevY.value !== open && transY.value < open) {
+      if (preStatus.value !== STATUS_CURRENT_PAGE && currentPageTranslationY.value < STATUS_CURRENT_PAGE) {
+        console.log('-- 模拟滚动');
+
         const scrollTo = animatedScrollViewRef?.current?.scrollTo;
         if (scrollTo) {
-          runOnJS(scrollTo)({ y: -transY.value + open, animated: false });
+          runOnJS(scrollTo)({ y: -currentPageTranslationY.value + STATUS_CURRENT_PAGE, animated: false });
         }
       }
     })
     .onEnd((e) => {
+      // default on worklet thread, https://github.com/software-mansion/react-native-gesture-handler/issues/2300
+
       // close sheet if velocity or travel is good
       // if ((e.velocityY > 500 || e.translationY > 100) && scrollY.value < 1) {
-      if (e.translationY > 400 && scrollY.value < 1) {
-        transY.value = withTiming(closed, { duration: 200 });
-        prevY.value = closed;
+      if (e.translationY > 400 && currentPageNestedChildScrollY.value < 1) {
+        currentPageTranslationY.value = withTiming(STATUS_NEXT_PAGE, { duration: 200 });
+        preStatus.value = STATUS_NEXT_PAGE;
 
         // else open sheet on reverse
         // } else if (e.velocityY < -500 || e.translationY < -100) {
       } else if (e.translationY < -400) {
-        transY.value = withTiming(open, { duration: 200 });
-        prevY.value = open;
+        currentPageTranslationY.value = withTiming(STATUS_CURRENT_PAGE, { duration: 200 });
+        preStatus.value = STATUS_CURRENT_PAGE;
 
         // don't do anything
+      } else if (e.translationY >= STATUS_CURRENT_PAGE_HEADER_LOADING) {
+        currentPageTranslationY.value = withTiming(STATUS_CURRENT_PAGE_HEADER_LOADING, { duration: 200 });
+        preStatus.value = STATUS_CURRENT_PAGE_HEADER_LOADING;
+        // start header loading
+
+        runOnJS(handleHeaderLoading)();
       } else {
-        transY.value = withTiming(prevY.value, { duration: 200 });
+        currentPageTranslationY.value = withTiming(preStatus.value, { duration: 200 });
       }
     })
     .onFinalize((_e) => {
       // stopped touching screen
-      moving.value = false;
-      movedY.value = 0;
+      isTouching.value = false;
+      currentPageNestedChildTouchingOffset.value = 0;
     })
-    .simultaneousWithExternalGesture(animatedScrollViewRef);
+    .simultaneousWithExternalGesture(animatedScrollViewRef)
+    .runOnJS(false);
 
   const scrollViewProps = useAnimatedProps(() => ({
     // only scroll if sheet is open
-    scrollEnabled: prevY.value === open,
+    scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
     // only bounce at bottom or not touching screen
-    bounces: scrollY.value > 0 || !moving.value,
+    // bounces: scrollY.value > 0 || !isTouching.value,
   }));
   // styles for screem
   const styles = StyleSheet.create({
@@ -120,7 +171,12 @@ function App() {
       // don't open beyond the open limit
       transform: [
         {
-          translateY: interpolate(transY.value, [0, open, closed, height], [open, open, closed, closed + 5], 'clamp'),
+          translateY: interpolate(
+            currentPageTranslationY.value,
+            [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, height],
+            [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
+            'clamp'
+          ),
         },
       ],
       shadowOffset: { height: -2, width: 0 },
