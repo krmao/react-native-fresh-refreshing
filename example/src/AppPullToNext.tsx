@@ -56,9 +56,25 @@ function App() {
   // scrollView 的实时内部内容滚动值
   const currentPageNestedChildScrollY = useSharedValue(0);
 
+  const isNestedChildCanPullUpToDown = useSharedValue(true);
+  const isNestedChildCanPullDownToUp = useSharedValue(false);
+
   // scroll handler for scrollview
-  const scrollHandler = useAnimatedScrollHandler(({ contentOffset }) => {
+  const scrollHandler = useAnimatedScrollHandler(({ contentOffset, layoutMeasurement, contentSize }) => {
     currentPageNestedChildScrollY.value = Math.round(contentOffset.y);
+    isNestedChildCanPullUpToDown.value = currentPageNestedChildScrollY.value === 0;
+    isNestedChildCanPullDownToUp.value =
+      Math.round(layoutMeasurement.height + contentOffset.y) >= Math.round(contentSize.height);
+    if (isNestedChildCanPullUpToDown.value || isNestedChildCanPullDownToUp.value) {
+      console.log(
+        '-- isNestedChildCanPullUpToDown=',
+        isNestedChildCanPullUpToDown.value,
+        'isNestedChildCanPullDownToUp=',
+        isNestedChildCanPullDownToUp.value,
+        layoutMeasurement.height + contentOffset.y,
+        contentSize.height
+      );
+    }
   });
 
   const finishHeaderLoading = (goToNextPage: boolean = false) => {
@@ -86,6 +102,11 @@ function App() {
     }, 1500);
   };
 
+  const simulateScroll = () => {
+    console.log('-- 模拟滚动');
+    animatedScrollViewRef?.current?.scrollTo?.(-currentPageTranslationY.value + STATUS_CURRENT_PAGE, undefined, false);
+  };
+
   // pan handler for sheet
   const gesture = Gesture.Pan()
     .onBegin(() => {
@@ -111,12 +132,7 @@ function App() {
 
       // simulate scroll if user continues touching screen
       if (preStatus.value !== STATUS_CURRENT_PAGE && currentPageTranslationY.value < STATUS_CURRENT_PAGE) {
-        console.log('-- 模拟滚动');
-
-        const scrollTo = animatedScrollViewRef?.current?.scrollTo;
-        if (scrollTo) {
-          runOnJS(scrollTo)({ y: -currentPageTranslationY.value + STATUS_CURRENT_PAGE, animated: false });
-        }
+        runOnJS(simulateScroll)();
       }
     })
     .onEnd((e) => {
