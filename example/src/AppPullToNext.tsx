@@ -97,7 +97,7 @@ function App() {
 
   const handleHeaderLoading = () => {
     setTimeout(() => {
-      finishHeaderLoading(testCount.current % 2 === 0);
+      finishHeaderLoading(false);
       testCount.current++;
     }, 1500);
   };
@@ -140,7 +140,7 @@ function App() {
 
       // close sheet if velocity or travel is good
       // if ((e.velocityY > 500 || e.translationY > 100) && scrollY.value < 1) {
-      if (e.translationY > 400 && currentPageNestedChildScrollY.value < 1) {
+      if (e.translationY > STATUS_CURRENT_PAGE_HEADER_LOADING * 3 && currentPageNestedChildScrollY.value < 1) {
         currentPageTranslationY.value = withTiming(STATUS_NEXT_PAGE, { duration: 200 });
         preStatus.value = STATUS_NEXT_PAGE;
 
