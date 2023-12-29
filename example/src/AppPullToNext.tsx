@@ -6,8 +6,8 @@ import {
   ScrollViewProps as RNScrollViewProps,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
+  ViewProps,
 } from 'react-native';
 import {
   Gesture,
@@ -35,18 +35,18 @@ const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollVie
   Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
 
 function App() {
-  let { width, height } = useWindowDimensions();
-  height = Dimensions.get('screen').height; // test
+  let height = Dimensions.get('screen').height; // test
 
   const STATUS_CURRENT_PAGE = 0; // 默认状态
   const STATUS_CURRENT_PAGE_HEADER_LOADING = 100; // header 加载中
   const STATUS_NEXT_PAGE = height * 0.8; // 下一页
 
+  const animatedScrollViewPreRef = useRef<RNGHScrollView>(null);
   const animatedScrollViewRef = useRef<RNGHScrollView>(null);
+  const animatedScrollViewNextRef = useRef<RNGHScrollView>(null);
   const testCount = useRef<number>(0);
 
   const preStatus = useSharedValue(STATUS_CURRENT_PAGE);
-
   const isTouching = useSharedValue(false);
   // 当前 page 实时整体页面位移值
   // 手指触摸移动以及松开手指还原状态时通过改变这个值达到动画位移的效果
@@ -55,9 +55,12 @@ function App() {
   const currentPageNestedChildTouchingOffset = useSharedValue(0);
   // scrollView 的实时内部内容滚动值
   const currentPageNestedChildScrollY = useSharedValue(0);
-
   const isNestedChildCanPullUpToDown = useSharedValue(true);
   const isNestedChildCanPullDownToUp = useSharedValue(false);
+  const enabledGesture = useSharedValue(true);
+
+  // scroll handler for scrollview
+  const scrollPreHandler = useAnimatedScrollHandler(() => {});
 
   // scroll handler for scrollview
   const scrollHandler = useAnimatedScrollHandler(({ contentOffset, layoutMeasurement, contentSize }) => {
@@ -76,6 +79,9 @@ function App() {
       );
     }
   });
+
+  // scroll handler for scrollview
+  const scrollNextHandler = useAnimatedScrollHandler(() => {});
 
   const finishHeaderLoading = (goToNextPage: boolean = false) => {
     if (goToNextPage) {
@@ -99,6 +105,7 @@ function App() {
     setTimeout(() => {
       finishHeaderLoading(false);
       testCount.current++;
+      enabledGesture.value = true;
     }, 1500);
   };
 
@@ -108,7 +115,8 @@ function App() {
   };
 
   // pan handler for sheet
-  const gesture = Gesture.Pan()
+  // const panGesture: PanGesture = Gesture.Pan();
+  const panGesture = Gesture.Pan()
     .onBegin(() => {
       // touching screen
       isTouching.value = true;
@@ -139,24 +147,19 @@ function App() {
       // default on worklet thread, https://github.com/software-mansion/react-native-gesture-handler/issues/2300
 
       // close sheet if velocity or travel is good
-      // if ((e.velocityY > 500 || e.translationY > 100) && scrollY.value < 1) {
-      if (e.translationY > STATUS_CURRENT_PAGE_HEADER_LOADING * 3 && currentPageNestedChildScrollY.value < 1) {
-        currentPageTranslationY.value = withTiming(STATUS_NEXT_PAGE, { duration: 200 });
-        preStatus.value = STATUS_NEXT_PAGE;
-
-        // else open sheet on reverse
-        // } else if (e.velocityY < -500 || e.translationY < -100) {
-      } else if (e.translationY < -400) {
-        currentPageTranslationY.value = withTiming(STATUS_CURRENT_PAGE, { duration: 200 });
-        preStatus.value = STATUS_CURRENT_PAGE;
-
-        // don't do anything
-      } else if (e.translationY >= STATUS_CURRENT_PAGE_HEADER_LOADING) {
-        currentPageTranslationY.value = withTiming(STATUS_CURRENT_PAGE_HEADER_LOADING, { duration: 200 });
+      if (e.translationY >= STATUS_CURRENT_PAGE_HEADER_LOADING && currentPageNestedChildScrollY.value < 1) {
+        enabledGesture.value = false;
+        currentPageTranslationY.value = withTiming(
+          STATUS_CURRENT_PAGE_HEADER_LOADING,
+          { duration: 200 },
+          (finished) => {
+            if (finished) {
+              runOnJS(handleHeaderLoading)();
+            }
+          }
+        );
         preStatus.value = STATUS_CURRENT_PAGE_HEADER_LOADING;
         // start header loading
-
-        runOnJS(handleHeaderLoading)();
       } else {
         currentPageTranslationY.value = withTiming(preStatus.value, { duration: 200 });
       }
@@ -169,21 +172,43 @@ function App() {
     .simultaneousWithExternalGesture(animatedScrollViewRef)
     .runOnJS(false);
 
+  const scrollViewPreProps = useAnimatedProps(() => ({
+    // only scroll if sheet is open
+    // scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
+    // only bounce at bottom or not touching screen
+    // bounces: scrollY.value > 0 || !isTouching.value,
+  }));
+
   const scrollViewProps = useAnimatedProps(() => ({
     // only scroll if sheet is open
     scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
     // only bounce at bottom or not touching screen
     // bounces: scrollY.value > 0 || !isTouching.value,
   }));
-  // styles for screem
+
+  const scrollViewNextProps = useAnimatedProps(() => ({
+    // only scroll if sheet is open
+    // scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
+    // only bounce at bottom or not touching screen
+    // bounces: scrollY.value > 0 || !isTouching.value,
+  }));
+
+  const sheetAnimatedPreStyle = useAnimatedStyle(() => ({
+    // don't open beyond the open limit
+    // transform: [
+    //   {
+    //     translateY: interpolate(
+    //       currentPageTranslationY.value,
+    //       [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, height],
+    //       [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
+    //       'clamp'
+    //     ),
+    //   },
+    // ],
+  }));
+
   const styles = StyleSheet.create({
-    screen: {
-      flex: 1,
-    },
-    map: {
-      ...StyleSheet.absoluteFillObject,
-    },
-    sheet: useAnimatedStyle(() => ({
+    sheetAnimatedStyle: useAnimatedStyle(() => ({
       // don't open beyond the open limit
       transform: [
         {
@@ -195,87 +220,263 @@ function App() {
           ),
         },
       ],
-      shadowOffset: { height: -2, width: 0 },
-      shadowOpacity: 0.15,
     })),
-    blur: {
-      padding: 1,
-      overflow: 'hidden',
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      backgroundColor: 'rgba(100,100,255,.65)',
-    },
-    scrollViewContainer: {
-      paddingBottom: height * 0.3,
-    },
-    bar: {
-      width: 50,
-      height: 5,
-      marginTop: 5,
-      borderRadius: 5,
-      backgroundColor: '#bbb',
-      marginLeft: width / 2 - 25,
-    },
-    header: {
-      borderBottomColor: 'rgba(0,0,0,.15)',
-      borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    title: {
-      padding: 15,
-      fontSize: 21,
-      fontWeight: '600',
-    },
-    button: {
-      fontSize: 15,
-      borderBottomColor: 'rgba(0,0,0,.15)',
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      paddingVertical: 20,
-      paddingHorizontal: 15,
-    },
-    image: {
-      width: '100%',
-      borderRadius: 10,
-      height: width / 2,
-      marginBottom: 15,
-    },
   });
 
-  return (
-    <View style={styles.screen}>
-      <GestureDetector gesture={gesture}>
-        <Animated.View style={styles.sheet}>
-          <View style={styles.blur}>
-            <View style={styles.bar} />
-            <View style={styles.header}>
-              <Text style={styles.title}>Header</Text>
-            </View>
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    // don't open beyond the open limit
+    transform: [
+      {
+        translateY: interpolate(
+          currentPageTranslationY.value,
+          [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, height],
+          [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
+          'clamp'
+        ),
+      },
+    ],
+  }));
 
-            <AnimatedScrollView
-              ref={animatedScrollViewRef}
-              scrollEventThrottle={1}
-              onScroll={scrollHandler}
-              bounces={false}
-              bouncesZoom={false}
-              alwaysBounceVertical={false}
-              alwaysBounceHorizontal={false}
-              fadingEdgeLength={0}
-              overScrollMode={'never'}
-              animatedProps={scrollViewProps}
-              contentContainerStyle={styles.scrollViewContainer}
+  const sheetAnimatedNextStyle = useAnimatedStyle(() => ({
+    // don't open beyond the open limit
+    // transform: [
+    //   {
+    //     translateY: interpolate(
+    //       currentPageTranslationY.value,
+    //       [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, height],
+    //       [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
+    //       'clamp'
+    //     ),
+    //   },
+    // ],
+  }));
+
+  const containerProps = useAnimatedProps<AnimateProps<ViewProps>>(() => ({
+    pointerEvents: enabledGesture.value ? 'auto' : 'none',
+  }));
+  return (
+    <View style={{ flex: 1 }}>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={{ flex: 1 }} animatedProps={containerProps}>
+          {/*<Animated.View style={sheetAnimatedPreStyle}>
+            <View
+              style={[
+                {
+                  padding: 1,
+                  overflow: 'hidden',
+                  borderTopLeftRadius: 20,
+                  borderTopRightRadius: 20,
+                  backgroundColor: '#ffffef',
+                  position: 'relative',
+                  height: height,
+                },
+                {
+                  position: 'absolute',
+                  top: -height,
+                  left: 0,
+                  right: 0,
+                  minHeight: height,
+                  height: height,
+                  maxHeight: height,
+                },
+              ]}
             >
-              {[...Array(20).keys()].map((i) => (
-                <Pressable
-                  key={i}
-                  style={styles.button}
-                  onPress={() => {
-                    console.log('--', i);
+              <View
+                style={{
+                  borderBottomColor: 'rgba(0,0,0,.15)',
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                }}
+              >
+                <Text
+                  style={{
+                    padding: 15,
+                    fontSize: 21,
+                    fontWeight: '600',
                   }}
                 >
-                  <Text>Scroll Content {i + 1}</Text>
-                </Pressable>
-              ))}
-            </AnimatedScrollView>
-          </View>
+                  Header
+                </Text>
+              </View>
+              <AnimatedScrollView
+                ref={animatedScrollViewPreRef}
+                scrollEventThrottle={1}
+                onScroll={scrollPreHandler}
+                bounces={false}
+                bouncesZoom={false}
+                alwaysBounceVertical={false}
+                alwaysBounceHorizontal={false}
+                fadingEdgeLength={0}
+                overScrollMode={'never'}
+                animatedProps={scrollViewPreProps}
+                contentContainerStyle={{
+                  paddingBottom: height * 0.3,
+                  minHeight: height,
+                }}
+              >
+                {[...Array(20).keys()].map((i) => (
+                  <Pressable
+                    key={i}
+                    style={{
+                      borderBottomColor: 'rgba(0,0,0,.15)',
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      paddingVertical: 20,
+                      paddingHorizontal: 15,
+                    }}
+                    onPress={() => {
+                      console.log('--', i);
+                    }}
+                  >
+                    <Text>Scroll Content {i + 1}</Text>
+                  </Pressable>
+                ))}
+              </AnimatedScrollView>
+            </View>
+          </Animated.View>*/}
+          <Animated.View style={styles.sheetAnimatedStyle}>
+            <View
+              style={[
+                {
+                  overflow: 'hidden',
+                  backgroundColor: '#ffffef',
+                  // position: 'relative',
+                  // height: height,
+                },
+                {
+                  // position: 'absolute',
+                  // top: 0,
+                  // left: 0,
+                  // right: 0,
+                  // minHeight: height,
+                  // height: height,
+                  // maxHeight: height,
+                },
+              ]}
+            >
+              <View
+                style={{
+                  borderBottomColor: 'rgba(0,0,0,.15)',
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                }}
+              >
+                <Text
+                  style={{
+                    padding: 15,
+                    fontSize: 21,
+                    fontWeight: '600',
+                  }}
+                >
+                  Header
+                </Text>
+              </View>
+              <AnimatedScrollView
+                ref={animatedScrollViewRef}
+                scrollEventThrottle={1}
+                onScroll={scrollHandler}
+                bounces={false}
+                bouncesZoom={false}
+                alwaysBounceVertical={false}
+                alwaysBounceHorizontal={false}
+                fadingEdgeLength={0}
+                overScrollMode={'never'}
+                animatedProps={scrollViewProps}
+                contentContainerStyle={{
+                  paddingBottom: height * 0.3,
+                  minHeight: height,
+                }}
+              >
+                {[...Array(20).keys()].map((i) => (
+                  <Pressable
+                    key={i}
+                    style={{
+                      borderBottomColor: 'rgba(0,0,0,.15)',
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      paddingVertical: 20,
+                      paddingHorizontal: 15,
+                    }}
+                    onPress={() => {
+                      console.log('--', i);
+                    }}
+                  >
+                    <Text>Scroll Content {i + 1}</Text>
+                  </Pressable>
+                ))}
+              </AnimatedScrollView>
+            </View>
+          </Animated.View>
+          {/*<Animated.View style={sheetAnimatedNextStyle}>
+            <View
+              style={[
+                {
+                  padding: 1,
+                  overflow: 'hidden',
+                  borderTopLeftRadius: 20,
+                  borderTopRightRadius: 20,
+                  backgroundColor: '#ffffef',
+                  position: 'relative',
+                  height: height,
+                },
+                {
+                  position: 'absolute',
+                  top: height,
+                  left: 0,
+                  right: 0,
+                  minHeight: height,
+                  height: height,
+                  maxHeight: height,
+                },
+              ]}
+            >
+              <View
+                style={{
+                  borderBottomColor: 'rgba(0,0,0,.15)',
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                }}
+              >
+                <Text
+                  style={{
+                    padding: 15,
+                    fontSize: 21,
+                    fontWeight: '600',
+                  }}
+                >
+                  Header
+                </Text>
+              </View>
+              <AnimatedScrollView
+                ref={animatedScrollViewNextRef}
+                scrollEventThrottle={1}
+                onScroll={scrollNextHandler}
+                bounces={false}
+                bouncesZoom={false}
+                alwaysBounceVertical={false}
+                alwaysBounceHorizontal={false}
+                fadingEdgeLength={0}
+                overScrollMode={'never'}
+                animatedProps={scrollViewNextProps}
+                contentContainerStyle={{
+                  paddingBottom: height * 0.3,
+                  minHeight: height,
+                }}
+              >
+                {[...Array(20).keys()].map((i) => (
+                  <Pressable
+                    key={i}
+                    style={{
+                      borderBottomColor: 'rgba(0,0,0,.15)',
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      paddingVertical: 20,
+                      paddingHorizontal: 15,
+                    }}
+                    onPress={() => {
+                      console.log('--', i);
+                    }}
+                  >
+                    <Text>Scroll Content {i + 1}</Text>
+                  </Pressable>
+                ))}
+              </AnimatedScrollView>
+            </View>
+          </Animated.View>*/}
         </Animated.View>
       </GestureDetector>
     </View>
