@@ -1,11 +1,10 @@
 import React, { RefAttributes, useRef } from 'react';
 import {
   Dimensions,
-  Pressable,
   ScrollView as RNScrollView,
   ScrollViewProps as RNScrollViewProps,
+  StatusBar,
   StyleSheet,
-  Text,
   View,
   ViewProps,
 } from 'react-native';
@@ -26,6 +25,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { NativeViewGestureHandlerProps } from 'react-native-gesture-handler/src/handlers/NativeViewGestureHandler';
+import { Header, ScrollViewContent } from './util/Test';
 
 // https://github.com/software-mansion/react-native-gesture-handler/issues/420#issuecomment-1356861934
 // https://snack.expo.dev/@himanshu266/bottom-sheet-scrollview
@@ -35,11 +35,11 @@ const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollVie
   Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
 
 function App() {
-  let height = Dimensions.get('screen').height; // test
+  let windowHeight = Dimensions.get('window').height; // test
 
   const STATUS_CURRENT_PAGE = 0; // 默认状态
   const STATUS_CURRENT_PAGE_HEADER_LOADING = 100; // header 加载中
-  const STATUS_NEXT_PAGE = height * 0.8; // 下一页
+  const STATUS_NEXT_PAGE = windowHeight * 0.8; // 下一页
 
   const animatedScrollViewPreRef = useRef<RNGHScrollView>(null);
   const animatedScrollViewRef = useRef<RNGHScrollView>(null);
@@ -214,7 +214,7 @@ function App() {
         {
           translateY: interpolate(
             currentPageTranslationY.value,
-            [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, height],
+            [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, windowHeight],
             [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
             'clamp'
           ),
@@ -229,7 +229,7 @@ function App() {
       {
         translateY: interpolate(
           currentPageTranslationY.value,
-          [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, height],
+          [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, windowHeight],
           [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
           'clamp'
         ),
@@ -313,22 +313,7 @@ function App() {
                   minHeight: height,
                 }}
               >
-                {[...Array(20).keys()].map((i) => (
-                  <Pressable
-                    key={i}
-                    style={{
-                      borderBottomColor: 'rgba(0,0,0,.15)',
-                      borderBottomWidth: StyleSheet.hairlineWidth,
-                      paddingVertical: 20,
-                      paddingHorizontal: 15,
-                    }}
-                    onPress={() => {
-                      console.log('--', i);
-                    }}
-                  >
-                    <Text>Scroll Content {i + 1}</Text>
-                  </Pressable>
-                ))}
+                 {ScrollViewContent}
               </AnimatedScrollView>
             </View>
           </Animated.View>*/}
@@ -337,9 +322,14 @@ function App() {
               style={[
                 {
                   overflow: 'hidden',
-                  backgroundColor: '#ffffef',
+                  backgroundColor: 'red',
                   // position: 'relative',
-                  // height: height,
+                  height: windowHeight - 5,
+                  maxHeight: windowHeight - 5,
+                  minHeight: windowHeight - 5,
+                  marginTop: StatusBar.currentHeight,
+                  marginHorizontal: 5,
+                  marginBottom: 5,
                 },
                 {
                   // position: 'absolute',
@@ -352,55 +342,27 @@ function App() {
                 },
               ]}
             >
-              <View
-                style={{
-                  borderBottomColor: 'rgba(0,0,0,.15)',
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                }}
-              >
-                <Text
-                  style={{
-                    padding: 15,
-                    fontSize: 21,
-                    fontWeight: '600',
+              {Header}
+              <View style={{ flex: 1, backgroundColor: 'cyan' }}>
+                <AnimatedScrollView
+                  ref={animatedScrollViewRef}
+                  scrollEventThrottle={1}
+                  onScroll={scrollHandler}
+                  style={{ flex: 1, backgroundColor: 'blue' }}
+                  bounces={false}
+                  bouncesZoom={false}
+                  alwaysBounceVertical={false}
+                  alwaysBounceHorizontal={false}
+                  fadingEdgeLength={0}
+                  overScrollMode={'never'}
+                  animatedProps={scrollViewProps}
+                  contentContainerStyle={{
+                    backgroundColor: 'yellow',
                   }}
                 >
-                  Header
-                </Text>
+                  {ScrollViewContent}
+                </AnimatedScrollView>
               </View>
-              <AnimatedScrollView
-                ref={animatedScrollViewRef}
-                scrollEventThrottle={1}
-                onScroll={scrollHandler}
-                bounces={false}
-                bouncesZoom={false}
-                alwaysBounceVertical={false}
-                alwaysBounceHorizontal={false}
-                fadingEdgeLength={0}
-                overScrollMode={'never'}
-                animatedProps={scrollViewProps}
-                contentContainerStyle={{
-                  paddingBottom: height * 0.3,
-                  minHeight: height,
-                }}
-              >
-                {[...Array(20).keys()].map((i) => (
-                  <Pressable
-                    key={i}
-                    style={{
-                      borderBottomColor: 'rgba(0,0,0,.15)',
-                      borderBottomWidth: StyleSheet.hairlineWidth,
-                      paddingVertical: 20,
-                      paddingHorizontal: 15,
-                    }}
-                    onPress={() => {
-                      console.log('--', i);
-                    }}
-                  >
-                    <Text>Scroll Content {i + 1}</Text>
-                  </Pressable>
-                ))}
-              </AnimatedScrollView>
             </View>
           </Animated.View>
           {/*<Animated.View style={sheetAnimatedNextStyle}>
@@ -458,22 +420,7 @@ function App() {
                   minHeight: height,
                 }}
               >
-                {[...Array(20).keys()].map((i) => (
-                  <Pressable
-                    key={i}
-                    style={{
-                      borderBottomColor: 'rgba(0,0,0,.15)',
-                      borderBottomWidth: StyleSheet.hairlineWidth,
-                      paddingVertical: 20,
-                      paddingHorizontal: 15,
-                    }}
-                    onPress={() => {
-                      console.log('--', i);
-                    }}
-                  >
-                    <Text>Scroll Content {i + 1}</Text>
-                  </Pressable>
-                ))}
+                 {ScrollViewContent}
               </AnimatedScrollView>
             </View>
           </Animated.View>*/}
