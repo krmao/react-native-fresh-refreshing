@@ -2,8 +2,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 
 export const Header = (
-  <View style={{ height: 200, backgroundColor: 'darkblue', justifyContent: 'center', alignItems: 'center' }}>
+  <View style={{ height: 100, backgroundColor: 'darkblue', justifyContent: 'center', alignItems: 'center' }}>
     <Text style={{ fontSize: 21, color: 'white', fontWeight: '600' }}>Header</Text>
+  </View>
+);
+export const Footer = (
+  <View style={{ height: 100, backgroundColor: 'darkblue', justifyContent: 'center', alignItems: 'center' }}>
+    <Text style={{ fontSize: 21, color: 'white', fontWeight: '600' }}>Footer</Text>
   </View>
 );
 export const ScrollViewContent = (
