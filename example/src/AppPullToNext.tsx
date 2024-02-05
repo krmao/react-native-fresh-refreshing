@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // noinspection JSUnusedLocalSymbols
 
-import React, { RefAttributes, useRef } from 'react';
+import React, { RefAttributes, useEffect, useRef } from 'react';
 import {
   Dimensions,
   ScrollView as RNScrollView,
@@ -31,6 +31,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { NativeViewGestureHandlerProps } from 'react-native-gesture-handler/src/handlers/NativeViewGestureHandler';
 import { Footer, Header, ScrollViewContent } from './util/Test';
+import PullTuNextHelper from './util/PullTuNextHelper';
 
 // https://github.com/software-mansion/react-native-gesture-handler/issues/420#issuecomment-1356861934
 // https://snack.expo.dev/@himanshu266/bottom-sheet-scrollview
@@ -41,9 +42,23 @@ const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollVie
 
 function App() {
   //region refs
+  const pullTuNextHelperRef = useRef<PullTuNextHelper>(new PullTuNextHelper());
   const nestedPreRef = useRef<RNGHScrollView>(null);
   const nestedRef = useRef<RNGHScrollView>(null);
   const nestedNextRef = useRef<RNGHScrollView>(null);
+
+  useEffect(() => {
+    let pullTuNextHelper = pullTuNextHelperRef.current;
+    console.log('---- cur=', pullTuNextHelper.getCurPage());
+    for (let i = 0; i < 5; i++) {
+      pullTuNextHelperRef.current.moveToNext();
+      console.log('---- cur=', pullTuNextHelper.getCurPage());
+    }
+    for (let i = 0; i < 5; i++) {
+      pullTuNextHelperRef.current.moveToPre();
+      console.log('---- cur=', pullTuNextHelper.getCurPage());
+    }
+  }, []);
   //endregion
 
   //region const values
