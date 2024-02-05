@@ -137,7 +137,7 @@ function App() {
     if (enableDebug) {
       console.log(tag, 'simulateScroll now...');
     }
-    nestedRef?.current?.scrollTo?.(-curTranslationY.value + STATUS_CURRENT_PAGE, undefined, false);
+    nestedRef?.current?.scrollTo?.({ x: undefined, y: -curTranslationY.value + STATUS_CURRENT_PAGE, animated: false });
   };
   const restoreStatus = () => {
     enabledGesture.value = true;
