@@ -81,7 +81,6 @@ function App() {
     const curScrollHeight = layoutMeasurement.height + contentOffset.y;
     isCurNestedCanPullingUpToDown.value = curNestedScrollY.value === 0;
     isCurNestedCanPullingDownToUp.value = Math.round(curScrollHeight) + 0.5 >= Math.round(contentSize.height);
-    // if (isNestedChildCanPullUpToDown.value || isNestedChildCanPullDownToUp.value) {
     if (enableDebug) {
       console.log(
         tag,
@@ -93,7 +92,6 @@ function App() {
       );
       console.log(tag, 'scrollHandler', '---- curScrollHeight=', curScrollHeight, 'contentSize=', contentSize);
     }
-    // }
   });
   const scrollNextHandler = useAnimatedScrollHandler(() => {});
   //endregion
@@ -141,7 +139,7 @@ function App() {
     }
     nestedRef?.current?.scrollTo?.(-curTranslationY.value + STATUS_CURRENT_PAGE, undefined, false);
   };
-  const restoreState = () => {
+  const restoreStatus = () => {
     enabledGesture.value = true;
     preStatus.value = STATUS_CURRENT_PAGE;
     isTouching.value = false;
@@ -354,8 +352,8 @@ function App() {
   }));
   return (
     <View style={{ flex: 1, position: 'relative' }}>
-      <TouchableOpacity style={styles.restore} onPress={restoreState}>
-        <Text style={{ fontSize: 8, fontWeight: 'bold', color: 'white' }}>RESTORE</Text>
+      <TouchableOpacity style={styles.restoreContainer} onPress={restoreStatus}>
+        <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#ffffff' }}>RESTORE</Text>
       </TouchableOpacity>
       <GestureDetector gesture={panGesture}>
         <Animated.View style={{ flex: 1 }} animatedProps={containerProps}>
@@ -423,7 +421,6 @@ function App() {
               style={[
                 {
                   overflow: 'hidden',
-                  backgroundColor: 'red',
                   // position: 'relative',
                   height: pageHeight - 5,
                   maxHeight: pageHeight - 5,
@@ -444,12 +441,12 @@ function App() {
               ]}
             >
               {Header}
-              <View style={{ flex: 1, backgroundColor: 'cyan' }}>
+              <View style={{ flex: 1, borderRadius: 5, overflow: 'hidden' }}>
                 <AnimatedScrollView
                   ref={nestedRef}
                   scrollEventThrottle={1}
                   onScroll={scrollHandler}
-                  style={{ flex: 1, backgroundColor: 'blue' }}
+                  style={{ flex: 1 }}
                   bounces={false}
                   bouncesZoom={false}
                   alwaysBounceVertical={false}
@@ -457,9 +454,7 @@ function App() {
                   fadingEdgeLength={0}
                   overScrollMode={'never'}
                   animatedProps={scrollViewProps}
-                  contentContainerStyle={{
-                    backgroundColor: 'yellow',
-                  }}
+                  contentContainerStyle={{}}
                 >
                   {ScrollViewContent}
                 </AnimatedScrollView>
@@ -535,16 +530,16 @@ function App() {
 export default gestureHandlerRootHOC(App);
 
 const styles = StyleSheet.create({
-  restore: {
+  restoreContainer: {
     zIndex: 10,
     position: 'absolute',
     right: 0,
-    bottom: 0,
+    bottom: 80,
     margin: 16,
-    backgroundColor: 'red',
-    borderRadius: 48,
-    width: 48,
-    height: 48,
+    backgroundColor: '#fec74b',
+    borderRadius: 60,
+    width: 60,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -2,33 +2,53 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 
 export const Header = (
-  <View style={{ height: 100, backgroundColor: 'darkblue', justifyContent: 'center', alignItems: 'center' }}>
-    <Text style={{ fontSize: 21, color: 'white', fontWeight: '600' }}>Header</Text>
+  <View
+    style={{ height: 80, backgroundColor: '#d92139', justifyContent: 'center', alignItems: 'center', borderRadius: 5 }}
+  >
+    <Text style={{ fontSize: 16, color: '#ffffff', fontWeight: 'bold' }}>HEADER</Text>
   </View>
 );
 export const Footer = (
-  <View style={{ height: 100, backgroundColor: 'darkblue', justifyContent: 'center', alignItems: 'center' }}>
-    <Text style={{ fontSize: 21, color: 'white', fontWeight: '600' }}>Footer</Text>
+  <View
+    style={{ height: 80, backgroundColor: '#d92139', justifyContent: 'center', alignItems: 'center', borderRadius: 5 }}
+  >
+    <Text style={{ fontSize: 16, color: '#ffffff', fontWeight: 'bold' }}>FOOTER</Text>
   </View>
 );
 export const ScrollViewContent = (
-  <View style={{ backgroundColor: 'orange' }}>
+  <View style={{ backgroundColor: '#253f5b', borderRadius: 5 }}>
     {[...Array(30).keys()].map((i) => (
       <Pressable
         key={i}
         style={{
-          height: 50,
-          borderBottomColor: 'rgba(0,0,0,.15)',
+          height: 48,
+          borderBottomColor: '#ffffff',
           borderBottomWidth: StyleSheet.hairlineWidth,
-          paddingHorizontal: 15,
           justifyContent: 'center',
-          alignItems: 'flex-start',
+          alignItems: 'center',
+          // backgroundColor: '#fec74b',
+          backgroundColor: '#aec33a',
+          elevation: 3,
+          shadowOpacity: 0.5,
+          shadowColor: '#000000',
+          marginHorizontal: 5,
+          marginTop: 5,
+          marginBottom: i === 29 ? 5 : 0,
+          borderRadius: 5,
         }}
         onPress={() => {
-          console.log('--', i);
+          console.log('you clicked', i);
         }}
       >
-        <Text>Scroll Content {i + 1}</Text>
+        <Text
+          style={{
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#ffffff',
+          }}
+        >
+          {i + 1}
+        </Text>
       </Pressable>
     ))}
   </View>
