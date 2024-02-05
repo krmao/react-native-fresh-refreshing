@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// noinspection JSUnusedLocalSymbols
+
 import React, { RefAttributes, useRef } from 'react';
 import {
   Dimensions,
@@ -5,6 +8,8 @@ import {
   ScrollViewProps as RNScrollViewProps,
   StatusBar,
   StyleSheet,
+  Text,
+  TouchableOpacity,
   View,
   ViewProps,
 } from 'react-native';
@@ -35,70 +40,85 @@ const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollVie
   Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
 
 function App() {
-  let windowHeight = Dimensions.get('window').height; // test
+  //region refs
+  const nestedPreRef = useRef<RNGHScrollView>(null);
+  const nestedRef = useRef<RNGHScrollView>(null);
+  const nestedNextRef = useRef<RNGHScrollView>(null);
+  //endregion
+
+  //region const values
+  const enableDebug = true;
+  const enablePullToNext = true;
+  const tag = enablePullToNext ? '[PullToNext]' : '[PullToRefresh]';
+  const pageHeight = Dimensions.get('window').height;
 
   const STATUS_CURRENT_PAGE = 0; // 默认状态
   const STATUS_CURRENT_PAGE_HEADER_LOADING = 100; // header 加载中
   const STATUS_CURRENT_PAGE_FOOTER_LOADING = -100; // footer 加载中
-  const STATUS_PRE_PAGE = -windowHeight * 0.8; // 上一页
-  const STATUS_NEXT_PAGE = windowHeight * 0.8; // 下一页
+  const STATUS_PRE_PAGE = -pageHeight + 100; // 上一页
+  const STATUS_NEXT_PAGE = pageHeight - 100; // 下一页
+  //endregion
 
-  const animatedScrollViewPreRef = useRef<RNGHScrollView>(null);
-  const animatedScrollViewRef = useRef<RNGHScrollView>(null);
-  const animatedScrollViewNextRef = useRef<RNGHScrollView>(null);
-  const testCount = useRef<number>(0);
-
+  //region dynamic values
+  const enabledGesture = useSharedValue(true);
   const preStatus = useSharedValue(STATUS_CURRENT_PAGE);
   const isTouching = useSharedValue(false);
-  // 当前 page 实时整体页面位移值
-  // 手指触摸移动以及松开手指还原状态时通过改变这个值达到动画位移的效果
-  const currentPageTranslationY = useSharedValue(STATUS_CURRENT_PAGE);
+  // 当前 page 实时整体页面位移值, 手指触摸移动以及松开手指还原状态时通过改变这个值达到动画位移的效果
+  const curTranslationY = useSharedValue(STATUS_CURRENT_PAGE);
   // scrollView 手指触摸时内部内容滚动的实时位移值
   const lastY = useSharedValue(0);
-  const currentPageNestedChildTouchingOffset = useSharedValue(0);
+  const curNestedTouchingOffset = useSharedValue(0);
   // scrollView 的实时内部内容滚动值
-  const currentPageNestedChildScrollY = useSharedValue(0);
-  const isNestedChildCanPullUpToDown = useSharedValue(true);
-  const isNestedChildCanPullDownToUp = useSharedValue(false);
-  const enabledGesture = useSharedValue(true);
+  const curNestedScrollY = useSharedValue(0);
+  const isCurNestedCanPullingUpToDown = useSharedValue(true);
+  const isCurNestedCanPullingDownToUp = useSharedValue(false);
+  //endregion
 
-  // scroll handler for scrollview
+  //region scroll handles
   const scrollPreHandler = useAnimatedScrollHandler(() => {});
-
-  // scroll handler for scrollview
   const scrollHandler = useAnimatedScrollHandler(({ contentOffset, layoutMeasurement, contentSize }) => {
-    currentPageNestedChildScrollY.value = Math.round(contentOffset.y);
-    isNestedChildCanPullUpToDown.value = currentPageNestedChildScrollY.value === 0;
-    isNestedChildCanPullDownToUp.value =
-      Math.round(layoutMeasurement.height + contentOffset.y) + 0.5 >= Math.round(contentSize.height);
+    curNestedScrollY.value = Math.round(contentOffset.y);
+    const curScrollHeight = layoutMeasurement.height + contentOffset.y;
+    isCurNestedCanPullingUpToDown.value = curNestedScrollY.value === 0;
+    isCurNestedCanPullingDownToUp.value = Math.round(curScrollHeight) + 0.5 >= Math.round(contentSize.height);
     // if (isNestedChildCanPullUpToDown.value || isNestedChildCanPullDownToUp.value) {
-    console.log(
-      '-- isNestedChildCanPullUpToDown=',
-      isNestedChildCanPullUpToDown.value,
-      'isNestedChildCanPullDownToUp=',
-      isNestedChildCanPullDownToUp.value,
-      'currentScrollContent=',
-      layoutMeasurement.height + contentOffset.y,
-      'contentSize=',
-      contentSize
-    );
+    if (enableDebug) {
+      console.log(
+        tag,
+        'scrollHandler',
+        'isCurNestedCanPullingUpToDown=',
+        isCurNestedCanPullingUpToDown.value,
+        'isCurNestedCanPullingDownToUp=',
+        isCurNestedCanPullingDownToUp.value
+      );
+      console.log(tag, 'scrollHandler', '---- curScrollHeight=', curScrollHeight, 'contentSize=', contentSize);
+    }
     // }
   });
-
-  // scroll handler for scrollview
   const scrollNextHandler = useAnimatedScrollHandler(() => {});
+  //endregion
 
-  const finishHeaderLoading = (goToNextPage: boolean = false) => {
+  //region loading
+  const finishLoading = (isHeader: boolean, goToNextPage: boolean = enablePullToNext) => {
     if (goToNextPage) {
-      if (currentPageTranslationY.value !== STATUS_NEXT_PAGE) {
-        currentPageTranslationY.value = withTiming(STATUS_NEXT_PAGE, { duration: 200 });
-      }
-      if (preStatus.value !== STATUS_NEXT_PAGE) {
-        preStatus.value = STATUS_NEXT_PAGE;
+      if (isHeader) {
+        if (curTranslationY.value !== STATUS_NEXT_PAGE) {
+          curTranslationY.value = withTiming(STATUS_NEXT_PAGE, { duration: 200 });
+        }
+        if (preStatus.value !== STATUS_NEXT_PAGE) {
+          preStatus.value = STATUS_NEXT_PAGE;
+        }
+      } else {
+        if (curTranslationY.value !== STATUS_PRE_PAGE) {
+          curTranslationY.value = withTiming(STATUS_PRE_PAGE, { duration: 200 });
+        }
+        if (preStatus.value !== STATUS_PRE_PAGE) {
+          preStatus.value = STATUS_PRE_PAGE;
+        }
       }
     } else {
-      if (currentPageTranslationY.value !== STATUS_CURRENT_PAGE) {
-        currentPageTranslationY.value = withTiming(STATUS_CURRENT_PAGE, { duration: 200 });
+      if (curTranslationY.value !== STATUS_CURRENT_PAGE) {
+        curTranslationY.value = withTiming(STATUS_CURRENT_PAGE, { duration: 200 });
       }
       if (preStatus.value !== STATUS_CURRENT_PAGE) {
         preStatus.value = STATUS_CURRENT_PAGE;
@@ -106,76 +126,93 @@ function App() {
     }
   };
 
-  const handleHeaderLoading = () => {
+  const handleLoading = (isHeader: boolean) => {
     setTimeout(() => {
-      finishHeaderLoading(false);
-      testCount.current++;
+      finishLoading(isHeader);
       enabledGesture.value = true;
     }, 1500);
   };
+  //endregion
 
+  //region others
   const simulateScroll = () => {
-    console.log('-- 模拟滚动');
-    animatedScrollViewRef?.current?.scrollTo?.(-currentPageTranslationY.value + STATUS_CURRENT_PAGE, undefined, false);
+    if (enableDebug) {
+      console.log(tag, 'simulateScroll now...');
+    }
+    nestedRef?.current?.scrollTo?.(-curTranslationY.value + STATUS_CURRENT_PAGE, undefined, false);
   };
+  const restoreState = () => {
+    enabledGesture.value = true;
+    preStatus.value = STATUS_CURRENT_PAGE;
+    isTouching.value = false;
+    curTranslationY.value = STATUS_CURRENT_PAGE;
+    lastY.value = 0;
+    curNestedTouchingOffset.value = 0;
+    // curNestedScrollY.value = 0;
+    // isCurNestedCanPullingUpToDown.value = false;
+    // isCurNestedCanPullingDownToUp.value = false;
+  };
+  //endregion
 
+  //region gesture
   // pan handler for sheet
   // const panGesture: PanGesture = Gesture.Pan();
   const panGesture = Gesture.Pan()
     .onBegin((e) => {
-      console.log('===============onBegin e', e);
       lastY.value = e.y;
-      // touching screen
       isTouching.value = true;
+      if (enableDebug) {
+        console.log(tag, 'onBegin', e.y);
+      }
     })
     .onUpdate((e) => {
       const isPullingUpToDown = e.y - lastY.value > 0;
-      console.log('===============onUpdate isPullingUpToDown=', isPullingUpToDown);
-      console.log('===============onUpdate e', e);
+      if (enableDebug) {
+        console.log(tag, 'onUpdate y=', e.y, 'isPullingUpToDown=', isPullingUpToDown);
+      }
       // move sheet if top or scrollview or is closed state
-      if (isPullingUpToDown && currentPageNestedChildScrollY.value === 0) {
+      if (isPullingUpToDown && curNestedScrollY.value === 0) {
         // current page changing translationY
-        currentPageTranslationY.value = preStatus.value + e.translationY - currentPageNestedChildTouchingOffset.value;
-        console.log(
-          '-- 页面正在位移 下拉 translationY=',
-          e.translationY,
-          'currentPageTranslationY=',
-          currentPageTranslationY.value,
-          'currentPageNestedChildTouchingOffset=',
-          currentPageNestedChildTouchingOffset.value
-        );
+        curTranslationY.value = preStatus.value + e.translationY - curNestedTouchingOffset.value;
+        if (enableDebug) {
+          console.log(
+            tag,
+            '页面下拉 translationY=',
+            e.translationY,
+            'curTranslationY=',
+            curTranslationY.value,
+            'curNestedTouchingOffset=',
+            curNestedTouchingOffset.value
+          );
+        }
         // capture movement, but don't move sheet
-      } else if (!isPullingUpToDown && isNestedChildCanPullDownToUp.value) {
-        currentPageTranslationY.value = preStatus.value + e.translationY - currentPageNestedChildTouchingOffset.value;
+      } else if (!isPullingUpToDown && isCurNestedCanPullingDownToUp.value) {
+        curTranslationY.value = preStatus.value + e.translationY - curNestedTouchingOffset.value;
         // currentPageTranslationY.value = -currentPageTranslationY.value;
         // currentPageTranslationY.value = e.translationY;
-        console.log(
-          '-- 页面正在位移 上拉 translationY=',
-          e.translationY,
-          'currentPageTranslationY=',
-          currentPageTranslationY.value,
-          'currentPageNestedChildTouchingOffset=',
-          currentPageNestedChildTouchingOffset.value,
-          'preStatus=',
-          preStatus.value
-        );
+        if (enableDebug) {
+          console.log(
+            tag,
+            '页面上拉 translationY=',
+            e.translationY,
+            'curTranslationY=',
+            curTranslationY.value,
+            'curNestedTouchingOffset=',
+            curNestedTouchingOffset.value,
+            'preStatus=',
+            preStatus.value
+          );
+        }
       } else {
         // current page child scrollview nested scroll
-        currentPageNestedChildTouchingOffset.value = e.translationY;
-        console.log(
-          '-- ScrollView 内部滚动',
-          currentPageNestedChildTouchingOffset.value,
-          currentPageNestedChildScrollY.value
-        );
+        curNestedTouchingOffset.value = e.translationY;
+        if (enableDebug) {
+          console.log(tag, '内部滚动', curNestedTouchingOffset.value, curNestedScrollY.value);
+        }
       }
 
       // simulate scroll if user continues touching screen
-      if (preStatus.value !== STATUS_CURRENT_PAGE && currentPageTranslationY.value < STATUS_CURRENT_PAGE) {
-        console.log(
-          '-- ScrollView simulateScroll',
-          currentPageNestedChildTouchingOffset.value,
-          currentPageNestedChildScrollY.value
-        );
+      if (preStatus.value !== STATUS_CURRENT_PAGE && curTranslationY.value < STATUS_CURRENT_PAGE) {
         runOnJS(simulateScroll)();
       }
     })
@@ -183,45 +220,41 @@ function App() {
       // default on worklet thread, https://github.com/software-mansion/react-native-gesture-handler/issues/2300
 
       // close sheet if velocity or travel is good
-      if (e.translationY >= STATUS_CURRENT_PAGE_HEADER_LOADING && currentPageNestedChildScrollY.value < 1) {
+      if (e.translationY >= STATUS_CURRENT_PAGE_HEADER_LOADING && curNestedScrollY.value < 1) {
         enabledGesture.value = false;
-        currentPageTranslationY.value = withTiming(
-          STATUS_CURRENT_PAGE_HEADER_LOADING,
-          { duration: 200 },
-          (finished) => {
-            if (finished) {
-              runOnJS(handleHeaderLoading)();
-            }
+        curTranslationY.value = withTiming(STATUS_CURRENT_PAGE_HEADER_LOADING, { duration: 200 }, (finished) => {
+          if (finished) {
+            runOnJS(handleLoading)(true);
           }
-        );
+        });
         preStatus.value = STATUS_CURRENT_PAGE_HEADER_LOADING;
         // start header loading
-      } else if (e.translationY <= STATUS_CURRENT_PAGE_FOOTER_LOADING && isNestedChildCanPullDownToUp.value) {
-        console.log('=====onEnd====== isNestedChildCanPullDownToUp', isNestedChildCanPullDownToUp.value);
+      } else if (e.translationY <= STATUS_CURRENT_PAGE_FOOTER_LOADING && isCurNestedCanPullingDownToUp.value) {
+        if (enableDebug) {
+          console.log(tag, 'onEnd isCurNestedCanPullingDownToUp=', isCurNestedCanPullingDownToUp.value);
+        }
         enabledGesture.value = false;
-        currentPageTranslationY.value = withTiming(
-          STATUS_CURRENT_PAGE_FOOTER_LOADING,
-          { duration: 200 },
-          (finished) => {
-            if (finished) {
-              runOnJS(handleHeaderLoading)();
-            }
+        curTranslationY.value = withTiming(STATUS_CURRENT_PAGE_FOOTER_LOADING, { duration: 200 }, (finished) => {
+          if (finished) {
+            runOnJS(handleLoading)(false);
           }
-        );
+        });
         preStatus.value = STATUS_CURRENT_PAGE_HEADER_LOADING;
         // start header loading
       } else {
-        currentPageTranslationY.value = withTiming(preStatus.value, { duration: 200 });
+        curTranslationY.value = withTiming(preStatus.value, { duration: 200 });
       }
     })
     .onFinalize((_e) => {
       // stopped touching screen
       isTouching.value = false;
-      currentPageNestedChildTouchingOffset.value = 0;
+      curNestedTouchingOffset.value = 0;
     })
-    .simultaneousWithExternalGesture(animatedScrollViewRef)
+    .simultaneousWithExternalGesture(nestedRef)
     .runOnJS(false);
+  //endregion
 
+  //region props and styles
   const scrollViewPreProps = useAnimatedProps(() => ({
     // only scroll if sheet is open
     // scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
@@ -257,16 +290,19 @@ function App() {
     // ],
   }));
 
-  const styles = StyleSheet.create({
+  const animatedStyles = StyleSheet.create({
     sheetAnimatedStyle: useAnimatedStyle(() => {
-      const isPullingUpToDown = currentPageTranslationY.value >= 0;
-      const isPullingDownToUp = currentPageTranslationY.value < 0;
-      console.log(
-        '-- sheetAnimatedStyle isPullingUpToDown=',
-        isPullingUpToDown,
-        'isPullingDownToUp=',
-        isPullingDownToUp
-      );
+      const isPullingUpToDown = curTranslationY.value >= 0;
+      const isPullingDownToUp = curTranslationY.value < 0;
+      if (enableDebug) {
+        console.log(
+          tag,
+          'sheetAnimatedStyle isPullingUpToDown=',
+          isPullingUpToDown,
+          'isPullingDownToUp=',
+          isPullingDownToUp
+        );
+      }
       return {
         // don't open beyond the open limit
         transform: [
@@ -277,7 +313,7 @@ function App() {
             //   [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
             //   'clamp'
             // ),
-            translateY: currentPageTranslationY.value,
+            translateY: curTranslationY.value,
           },
         ],
       };
@@ -289,8 +325,8 @@ function App() {
     transform: [
       {
         translateY: interpolate(
-          currentPageTranslationY.value,
-          [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, windowHeight],
+          curTranslationY.value,
+          [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, pageHeight],
           [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
           'clamp'
         ),
@@ -311,12 +347,16 @@ function App() {
     //   },
     // ],
   }));
+  //endregion
 
   const containerProps = useAnimatedProps<AnimateProps<ViewProps>>(() => ({
     pointerEvents: enabledGesture.value ? 'auto' : 'none',
   }));
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, position: 'relative' }}>
+      <TouchableOpacity style={styles.restore} onPress={restoreState}>
+        <Text style={{ fontSize: 8, fontWeight: 'bold', color: 'white' }}>RESTORE</Text>
+      </TouchableOpacity>
       <GestureDetector gesture={panGesture}>
         <Animated.View style={{ flex: 1 }} animatedProps={containerProps}>
           {/*<Animated.View style={sheetAnimatedPreStyle}>
@@ -378,16 +418,16 @@ function App() {
               </AnimatedScrollView>
             </View>
           </Animated.View>*/}
-          <Animated.View style={styles.sheetAnimatedStyle}>
+          <Animated.View style={animatedStyles.sheetAnimatedStyle}>
             <View
               style={[
                 {
                   overflow: 'hidden',
                   backgroundColor: 'red',
                   // position: 'relative',
-                  height: windowHeight - 5,
-                  maxHeight: windowHeight - 5,
-                  minHeight: windowHeight - 5,
+                  height: pageHeight - 5,
+                  maxHeight: pageHeight - 5,
+                  minHeight: pageHeight - 5,
                   marginTop: StatusBar.currentHeight,
                   marginHorizontal: 5,
                   marginBottom: 5,
@@ -406,7 +446,7 @@ function App() {
               {Header}
               <View style={{ flex: 1, backgroundColor: 'cyan' }}>
                 <AnimatedScrollView
-                  ref={animatedScrollViewRef}
+                  ref={nestedRef}
                   scrollEventThrottle={1}
                   onScroll={scrollHandler}
                   style={{ flex: 1, backgroundColor: 'blue' }}
@@ -493,3 +533,19 @@ function App() {
 }
 
 export default gestureHandlerRootHOC(App);
+
+const styles = StyleSheet.create({
+  restore: {
+    zIndex: 10,
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    margin: 16,
+    backgroundColor: 'red',
+    borderRadius: 48,
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
