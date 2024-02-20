@@ -2,9 +2,25 @@
 
 Based on [react-native-fresh-refresh](https://github.com/4TWIGGERS/), research some new features.
 
+## Preview
+
+### Pull to next
+
+> support pull to next or pull to previous
+
+<img alt='PullToNext' src="./preview/PullToNext_W_240.gif" width='240'>
+
+### Second floor
+
+> haven't ready yet
+
 ## Installation
 
+> haven't ready yet
+
 ## Usage
+
+> haven't ready yet
 
 ## Contributing
 
