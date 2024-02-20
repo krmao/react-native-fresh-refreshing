@@ -44,6 +44,16 @@ export default class PullTuNextHelper {
   public getPrePageItemOrigin = (): PageItem => this.pageItemOriginArray[0] as PageItem;
   public getCurPageItemOrigin = (): PageItem => this.pageItemOriginArray[1] as PageItem;
   public getNextPageItemOrigin = (): PageItem => this.pageItemOriginArray[2] as PageItem;
+
+  public getPrePageItemOriginNestedScrollViewRef = (): RefObject<ScrollView> => {
+    return this.getPrePageItemOrigin().nestedScrollViewRef;
+  };
+  public getCurPageItemOriginNestedScrollViewRef = (): RefObject<ScrollView> => {
+    return this.getCurPageItemOrigin().nestedScrollViewRef;
+  };
+  public getNextPageItemOriginNestedScrollViewRef = (): RefObject<ScrollView> => {
+    return this.getNextPageItemOrigin().nestedScrollViewRef;
+  };
   //endregion
 
   //region 当前最新的

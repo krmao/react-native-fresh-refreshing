@@ -52,20 +52,6 @@ function App() {
     ])
   );
 
-  // @ts-ignore
-  const getPrePageItemOriginNestedScrollViewRef = () => {
-    return pullTuNextHelperRef.current.getPrePageItemOrigin().nestedScrollViewRef;
-  };
-
-  const getCurPageItemOriginNestedScrollViewRef = () => {
-    return pullTuNextHelperRef.current.getCurPageItemOrigin().nestedScrollViewRef;
-  };
-
-  // @ts-ignore
-  const getNextPageItemOriginNestedScrollViewRef = () => {
-    return pullTuNextHelperRef.current.getNextPageItemOrigin().nestedScrollViewRef;
-  };
-
   useEffect(() => {
     let pullTuNextHelper = pullTuNextHelperRef.current;
     console.log('---- cur=', pullTuNextHelper.getCurPageItem().toString());
@@ -170,7 +156,7 @@ function App() {
     if (enableDebug) {
       console.log(tag, 'simulateScroll now...');
     }
-    getCurPageItemOriginNestedScrollViewRef()?.current?.scrollTo?.({
+    pullTuNextHelperRef.current.getCurPageItemOriginNestedScrollViewRef()?.current?.scrollTo?.({
       x: undefined,
       y: -curTranslationY.value + STATUS_CURRENT_PAGE,
       animated: false,
@@ -285,7 +271,7 @@ function App() {
       isTouching.value = false;
       curNestedTouchingOffset.value = 0;
     })
-    .simultaneousWithExternalGesture(getCurPageItemOriginNestedScrollViewRef())
+    .simultaneousWithExternalGesture(pullTuNextHelperRef.current.getCurPageItemOriginNestedScrollViewRef())
     .runOnJS(false);
   //endregion
 
@@ -480,7 +466,7 @@ function App() {
               {Header}
               <View style={{ flex: 1, borderRadius: 5, overflow: 'hidden' }}>
                 <AnimatedScrollView
-                  ref={getCurPageItemOriginNestedScrollViewRef()}
+                  ref={pullTuNextHelperRef.current.getCurPageItemOriginNestedScrollViewRef()}
                   scrollEventThrottle={1}
                   onScroll={scrollHandler}
                   style={{ flex: 1 }}
