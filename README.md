@@ -6,21 +6,22 @@ Based on [react-native-fresh-refresh](https://github.com/4TWIGGERS/), research s
 
 ### Pull to next
 
-> support pull to next or pull to previous
+> Support pull to next or pull to previous just like TikTok<br />
+> ***Haven't ready yet***
 
 <img alt='PullToNext' src="./preview/PullToNext_W_240.gif" width='240'>
 
 ### Second floor
 
-> haven't ready yet
+> ***Haven't ready yet***
 
 ## Installation
 
-> haven't ready yet
+> ***Haven't ready yet***
 
 ## Usage
 
-> haven't ready yet
+> ***Haven't ready yet***
 
 ## Contributing
 
