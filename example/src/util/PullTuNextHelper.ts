@@ -3,10 +3,10 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { SharedValue } from 'react-native-reanimated';
 
 export class PageItem {
-  public name: string;
-  public nestedScrollViewRef: RefObject<ScrollView>;
-  public translationY: SharedValue<number>;
-  public height: number;
+  public readonly name: string;
+  public readonly nestedScrollViewRef: RefObject<ScrollView>;
+  public readonly translationY: SharedValue<number>;
+  public readonly height: number;
 
   constructor(
     name: string,
