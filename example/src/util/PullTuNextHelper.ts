@@ -1,40 +1,45 @@
-import { RefObject, useRef } from 'react';
+import { RefObject } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Dimensions } from 'react-native';
 import { SharedValue } from 'react-native-reanimated';
 
-export class Page {
+export class PageItem {
   public name: string;
   public nestedScrollViewRef: RefObject<ScrollView>;
   public translationY: SharedValue<number>;
+  public height: number;
 
-  constructor(name: string, nestedScrollViewRef: RefObject<ScrollView>) {
+  constructor(
+    name: string,
+    nestedScrollViewRef: RefObject<ScrollView>,
+    translationY: SharedValue<number>,
+    height: number
+  ) {
     this.name = name;
     this.nestedScrollViewRef = nestedScrollViewRef;
+    this.translationY = translationY;
+    this.height = height;
   }
 }
 
+// noinspection JSUnusedGlobalSymbols
 export default class PullTuNextHelper {
-  private readonly pageArray: Array<Page> = [
-    new Page('A', useRef<ScrollView>(null)),
-    new Page('B', useRef<ScrollView>(null)),
-    new Page('C', useRef<ScrollView>(null)),
-  ];
-  private pageHeight: number = Dimensions.get('window').height;
+  private readonly pageItemArray: Array<PageItem>;
 
-  constructor() {}
+  constructor(pageItemArray: Array<PageItem>) {
+    this.pageItemArray = pageItemArray;
+  }
 
-  public getPrePage = (): Page => this.pageArray[0] as Page;
-  public getCurPage = (): Page => this.pageArray[1] as Page;
-  public getNextPage = (): Page => this.pageArray[2] as Page;
-  public moveToPre = (callback?: () => void) => {
-    let lastPage = this.pageArray.pop() as Page;
-    this.pageArray.unshift(lastPage);
+  public getPrePageItem = (): PageItem => this.pageItemArray[0] as PageItem;
+  public getCurPageItem = (): PageItem => this.pageItemArray[1] as PageItem;
+  public getNextPageItem = (): PageItem => this.pageItemArray[2] as PageItem;
+  public moveToPreItem = (callback?: () => void) => {
+    let lastPageItem = this.pageItemArray.pop() as PageItem;
+    this.pageItemArray.unshift(lastPageItem);
     callback?.();
   };
-  public moveToNext = (callback?: () => void) => {
-    let prePage = this.pageArray.shift() as Page;
-    this.pageArray.push(prePage);
+  public moveToNextItem = (callback?: () => void) => {
+    let prePageItem = this.pageItemArray.shift() as PageItem;
+    this.pageItemArray.push(prePageItem);
     callback?.();
   };
 }

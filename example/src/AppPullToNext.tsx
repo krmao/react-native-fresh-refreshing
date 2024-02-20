@@ -17,6 +17,7 @@ import {
   Gesture,
   GestureDetector,
   gestureHandlerRootHOC,
+  ScrollView,
   ScrollView as RNGHScrollView,
 } from 'react-native-gesture-handler';
 import Animated, {
@@ -31,7 +32,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { NativeViewGestureHandlerProps } from 'react-native-gesture-handler/src/handlers/NativeViewGestureHandler';
 import { Footer, Header, ScrollViewContent } from './util/Test';
-import PullTuNextHelper from './util/PullTuNextHelper';
+import PullTuNextHelper, { PageItem } from './util/PullTuNextHelper';
 
 // https://github.com/software-mansion/react-native-gesture-handler/issues/420#issuecomment-1356861934
 // https://snack.expo.dev/@himanshu266/bottom-sheet-scrollview
@@ -40,23 +41,31 @@ type AnimatedScrollViewProps = RNScrollViewProps & NativeViewGestureHandlerProps
 const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollViewProps>> =
   Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
 
+const PAGE_ITEM_HEIGHT = Dimensions.get('window').height;
 function App() {
   //region refs
-  const pullTuNextHelperRef = useRef<PullTuNextHelper>(new PullTuNextHelper());
+  const pullTuNextHelperRef = useRef<PullTuNextHelper>(
+    new PullTuNextHelper([
+      new PageItem('A', useRef<ScrollView>(null), useSharedValue(0), PAGE_ITEM_HEIGHT),
+      new PageItem('B', useRef<ScrollView>(null), useSharedValue(0), PAGE_ITEM_HEIGHT),
+      new PageItem('C', useRef<ScrollView>(null), useSharedValue(0), PAGE_ITEM_HEIGHT),
+    ])
+  );
+
   const nestedPreRef = useRef<RNGHScrollView>(null);
   const nestedRef = useRef<RNGHScrollView>(null);
   const nestedNextRef = useRef<RNGHScrollView>(null);
 
   useEffect(() => {
     let pullTuNextHelper = pullTuNextHelperRef.current;
-    console.log('---- cur=', pullTuNextHelper.getCurPage());
+    console.log('---- cur=', pullTuNextHelper.getCurPageItem());
     for (let i = 0; i < 5; i++) {
-      pullTuNextHelperRef.current.moveToNext();
-      console.log('---- cur=', pullTuNextHelper.getCurPage());
+      pullTuNextHelperRef.current.moveToNextItem();
+      console.log('---- cur=', pullTuNextHelper.getCurPageItem());
     }
     for (let i = 0; i < 5; i++) {
-      pullTuNextHelperRef.current.moveToPre();
-      console.log('---- cur=', pullTuNextHelper.getCurPage());
+      pullTuNextHelperRef.current.moveToPreItem();
+      console.log('---- cur=', pullTuNextHelper.getCurPageItem());
     }
   }, []);
   //endregion
@@ -65,13 +74,12 @@ function App() {
   const enableDebug = true;
   const enablePullToNext = true;
   const tag = enablePullToNext ? '[PullToNext]' : '[PullToRefresh]';
-  const pageHeight = Dimensions.get('window').height;
 
   const STATUS_CURRENT_PAGE = 0; // 默认状态
   const STATUS_CURRENT_PAGE_HEADER_LOADING = 100; // header 加载中
   const STATUS_CURRENT_PAGE_FOOTER_LOADING = -100; // footer 加载中
-  const STATUS_PRE_PAGE = -pageHeight + 100; // 上一页
-  const STATUS_NEXT_PAGE = pageHeight - 100; // 下一页
+  const STATUS_PRE_PAGE = -PAGE_ITEM_HEIGHT + 100; // 上一页
+  const STATUS_NEXT_PAGE = PAGE_ITEM_HEIGHT - 100; // 下一页
   //endregion
 
   //region dynamic values
@@ -339,7 +347,7 @@ function App() {
       {
         translateY: interpolate(
           curTranslationY.value,
-          [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, pageHeight],
+          [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, PAGE_ITEM_HEIGHT],
           [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
           'clamp'
         ),
@@ -437,9 +445,9 @@ function App() {
                 {
                   overflow: 'hidden',
                   // position: 'relative',
-                  height: pageHeight - 5,
-                  maxHeight: pageHeight - 5,
-                  minHeight: pageHeight - 5,
+                  height: PAGE_ITEM_HEIGHT - 5,
+                  maxHeight: PAGE_ITEM_HEIGHT - 5,
+                  minHeight: PAGE_ITEM_HEIGHT - 5,
                   marginTop: StatusBar.currentHeight,
                   marginHorizontal: 5,
                   marginBottom: 5,
