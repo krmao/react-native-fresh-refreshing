@@ -52,9 +52,19 @@ function App() {
     ])
   );
 
-  const nestedPreRef = useRef<RNGHScrollView>(null);
-  const nestedRef = useRef<RNGHScrollView>(null);
-  const nestedNextRef = useRef<RNGHScrollView>(null);
+  // @ts-ignore
+  const getPrePageItemOriginNestedScrollViewRef = () => {
+    return pullTuNextHelperRef.current.getPrePageItemOrigin().nestedScrollViewRef;
+  };
+
+  const getCurPageItemOriginNestedScrollViewRef = () => {
+    return pullTuNextHelperRef.current.getCurPageItemOrigin().nestedScrollViewRef;
+  };
+
+  // @ts-ignore
+  const getNextPageItemOriginNestedScrollViewRef = () => {
+    return pullTuNextHelperRef.current.getNextPageItemOrigin().nestedScrollViewRef;
+  };
 
   useEffect(() => {
     let pullTuNextHelper = pullTuNextHelperRef.current;
@@ -160,7 +170,11 @@ function App() {
     if (enableDebug) {
       console.log(tag, 'simulateScroll now...');
     }
-    nestedRef?.current?.scrollTo?.({ x: undefined, y: -curTranslationY.value + STATUS_CURRENT_PAGE, animated: false });
+    getCurPageItemOriginNestedScrollViewRef()?.current?.scrollTo?.({
+      x: undefined,
+      y: -curTranslationY.value + STATUS_CURRENT_PAGE,
+      animated: false,
+    });
   };
   const restoreStatus = () => {
     enabledGesture.value = true;
@@ -271,7 +285,7 @@ function App() {
       isTouching.value = false;
       curNestedTouchingOffset.value = 0;
     })
-    .simultaneousWithExternalGesture(nestedRef)
+    .simultaneousWithExternalGesture(getCurPageItemOriginNestedScrollViewRef())
     .runOnJS(false);
   //endregion
 
@@ -466,7 +480,7 @@ function App() {
               {Header}
               <View style={{ flex: 1, borderRadius: 5, overflow: 'hidden' }}>
                 <AnimatedScrollView
-                  ref={nestedRef}
+                  ref={getCurPageItemOriginNestedScrollViewRef()}
                   scrollEventThrottle={1}
                   onScroll={scrollHandler}
                   style={{ flex: 1 }}

@@ -33,11 +33,20 @@ export class PageItem {
 // noinspection JSUnusedGlobalSymbols
 export default class PullTuNextHelper {
   private readonly pageItemArray: Array<PageItem>;
+  private readonly pageItemOriginArray: Array<PageItem>;
 
-  constructor(pageItemArray: Array<PageItem>) {
-    this.pageItemArray = pageItemArray;
+  constructor(pageItemOriginArray: Array<PageItem>) {
+    this.pageItemOriginArray = pageItemOriginArray;
+    this.pageItemArray = [...pageItemOriginArray];
   }
 
+  //region 最初原始的
+  public getPrePageItemOrigin = (): PageItem => this.pageItemOriginArray[0] as PageItem;
+  public getCurPageItemOrigin = (): PageItem => this.pageItemOriginArray[1] as PageItem;
+  public getNextPageItemOrigin = (): PageItem => this.pageItemOriginArray[2] as PageItem;
+  //endregion
+
+  //region 当前最新的
   public getPrePageItem = (): PageItem => this.pageItemArray[0] as PageItem;
   public getCurPageItem = (): PageItem => this.pageItemArray[1] as PageItem;
   public getNextPageItem = (): PageItem => this.pageItemArray[2] as PageItem;
@@ -51,4 +60,5 @@ export default class PullTuNextHelper {
     this.pageItemArray.push(prePageItem);
     callback?.();
   };
+  //endregion
 }
