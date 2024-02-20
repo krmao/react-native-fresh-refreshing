@@ -4,20 +4,29 @@ import { SharedValue } from 'react-native-reanimated';
 
 export class PageItem {
   public readonly name: string;
-  public readonly nestedScrollViewRef: RefObject<ScrollView>;
-  public readonly translationY: SharedValue<number>;
   public readonly height: number;
+  public readonly translationY: SharedValue<number>;
+  public readonly nestedScrollViewRef: RefObject<ScrollView>;
 
-  constructor(
+  public constructor(
     name: string,
-    nestedScrollViewRef: RefObject<ScrollView>,
+    height: number,
     translationY: SharedValue<number>,
-    height: number
+    nestedScrollViewRef: RefObject<ScrollView>
   ) {
     this.name = name;
-    this.nestedScrollViewRef = nestedScrollViewRef;
-    this.translationY = translationY;
     this.height = height;
+    this.translationY = translationY;
+    this.nestedScrollViewRef = nestedScrollViewRef;
+  }
+
+  public toString(): string {
+    return (
+      `(name:${this.name}, ` +
+      `height:${this.height}, ` +
+      `translationY:${this.translationY.value}, ` +
+      `nestedScrollViewRef:${this.nestedScrollViewRef.current})`
+    );
   }
 }
 

@@ -41,14 +41,14 @@ type AnimatedScrollViewProps = RNScrollViewProps & NativeViewGestureHandlerProps
 const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollViewProps>> =
   Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
 
-const PAGE_ITEM_HEIGHT = Dimensions.get('window').height;
 function App() {
+  const PAGE_ITEM_HEIGHT = Dimensions.get('window').height;
   //region refs
   const pullTuNextHelperRef = useRef<PullTuNextHelper>(
     new PullTuNextHelper([
-      new PageItem('A', useRef<ScrollView>(null), useSharedValue(0), PAGE_ITEM_HEIGHT),
-      new PageItem('B', useRef<ScrollView>(null), useSharedValue(0), PAGE_ITEM_HEIGHT),
-      new PageItem('C', useRef<ScrollView>(null), useSharedValue(0), PAGE_ITEM_HEIGHT),
+      new PageItem('A', PAGE_ITEM_HEIGHT, useSharedValue(0), useRef<ScrollView>(null)),
+      new PageItem('B', PAGE_ITEM_HEIGHT, useSharedValue(0), useRef<ScrollView>(null)),
+      new PageItem('C', PAGE_ITEM_HEIGHT, useSharedValue(0), useRef<ScrollView>(null)),
     ])
   );
 
@@ -58,14 +58,14 @@ function App() {
 
   useEffect(() => {
     let pullTuNextHelper = pullTuNextHelperRef.current;
-    console.log('---- cur=', pullTuNextHelper.getCurPageItem());
+    console.log('---- cur=', pullTuNextHelper.getCurPageItem().toString());
     for (let i = 0; i < 5; i++) {
       pullTuNextHelperRef.current.moveToNextItem();
-      console.log('---- cur=', pullTuNextHelper.getCurPageItem());
+      console.log('---- cur=', pullTuNextHelper.getCurPageItem().toString());
     }
     for (let i = 0; i < 5; i++) {
       pullTuNextHelperRef.current.moveToPreItem();
-      console.log('---- cur=', pullTuNextHelper.getCurPageItem());
+      console.log('---- cur=', pullTuNextHelper.getCurPageItem().toString());
     }
   }, []);
   //endregion
