@@ -30,7 +30,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { NativeViewGestureHandlerProps } from 'react-native-gesture-handler/src/handlers/NativeViewGestureHandler';
 import { Footer, Header, ScrollViewContent } from './util/Test';
-import PullTuNextHelper, { PageItem } from './util/PullTuNextHelper';
+import usePullToNextHelperRef, { PageItem, PullTuNextHelper } from './util/PullTuNextHelper';
 
 // https://github.com/software-mansion/react-native-gesture-handler/issues/420#issuecomment-1356861934
 // https://snack.expo.dev/@himanshu266/bottom-sheet-scrollview
@@ -48,7 +48,7 @@ function App() {
   const originCurNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originNextNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   //region refs
-  const pullTuNextHelperRef = useRef<PullTuNextHelper>(
+  const pullTuNextHelperRef = usePullToNextHelperRef(
     new PullTuNextHelper([
       new PageItem(
         'A',
@@ -354,34 +354,32 @@ function App() {
   // ],
   // }));
 
-  const animatedStyles = StyleSheet.create({
-    sheetAnimatedStyle: useAnimatedStyle(() => {
-      const isPullingUpToDown = curPageItemTranslationY.value >= 0;
-      const isPullingDownToUp = curPageItemTranslationY.value < 0;
-      if (enableDebug) {
-        console.log(
-          tag,
-          'sheetAnimatedStyle isPullingUpToDown=',
-          isPullingUpToDown,
-          'isPullingDownToUp=',
-          isPullingDownToUp
-        );
-      }
-      return {
-        // don't open beyond the open limit
-        transform: [
-          {
-            // translateY: interpolate(
-            //   currentPageTranslationY.value,
-            //   [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, windowHeight],
-            //   [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
-            //   'clamp'
-            // ),
-            translateY: curPageItemTranslationY.value,
-          },
-        ],
-      };
-    }),
+  const sheetAnimatedStyle = useAnimatedStyle(() => {
+    const isPullingUpToDown = curPageItemTranslationY.value >= 0;
+    const isPullingDownToUp = curPageItemTranslationY.value < 0;
+    if (enableDebug) {
+      console.log(
+        tag,
+        'sheetAnimatedStyle isPullingUpToDown=',
+        isPullingUpToDown,
+        'isPullingDownToUp=',
+        isPullingDownToUp
+      );
+    }
+    return {
+      // don't open beyond the open limit
+      transform: [
+        {
+          // translateY: interpolate(
+          //   currentPageTranslationY.value,
+          //   [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, windowHeight],
+          //   [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
+          //   'clamp'
+          // ),
+          translateY: curPageItemTranslationY.value,
+        },
+      ],
+    };
   });
 
   // const sheetAnimatedStyle = useAnimatedStyle(() => ({
@@ -482,7 +480,7 @@ function App() {
               </AnimatedScrollView>
             </View>
           </Animated.View>*/}
-          <Animated.View style={animatedStyles.sheetAnimatedStyle}>
+          <Animated.View style={sheetAnimatedStyle}>
             <View
               style={[
                 {
