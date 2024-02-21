@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // noinspection JSUnusedLocalSymbols
 
-import React, { RefAttributes, useEffect, useRef } from 'react';
+import React, { RefAttributes, RefObject, useEffect, useRef } from 'react';
 import {
   Dimensions,
   ScrollView as RNScrollView,
@@ -22,7 +21,6 @@ import {
 } from 'react-native-gesture-handler';
 import Animated, {
   AnimateProps,
-  interpolate,
   runOnJS,
   useAnimatedProps,
   useAnimatedScrollHandler,
@@ -40,17 +38,64 @@ import PullTuNextHelper, { PageItem } from './util/PullTuNextHelper';
 type AnimatedScrollViewProps = RNScrollViewProps & NativeViewGestureHandlerProps & RefAttributes<RNScrollView>;
 const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollViewProps>> =
   Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
+const enableDebug = true;
+const enablePullToNext = true;
+const tag = enablePullToNext ? '[PullToNext]' : '[PullToRefresh]';
 
 function App() {
   const PAGE_ITEM_HEIGHT = Dimensions.get('window').height;
+  const originPreNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
+  const originCurNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
+  const originNextNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   //region refs
   const pullTuNextHelperRef = useRef<PullTuNextHelper>(
     new PullTuNextHelper([
-      new PageItem('A', PAGE_ITEM_HEIGHT, useSharedValue(0), useRef<ScrollView>(null)),
-      new PageItem('B', PAGE_ITEM_HEIGHT, useSharedValue(0), useRef<ScrollView>(null)),
-      new PageItem('C', PAGE_ITEM_HEIGHT, useSharedValue(0), useRef<ScrollView>(null)),
+      new PageItem(
+        'A',
+        PAGE_ITEM_HEIGHT,
+        useSharedValue(-PAGE_ITEM_HEIGHT),
+        useSharedValue(false),
+        useSharedValue(true),
+        useSharedValue(0),
+        useSharedValue(0),
+        useSharedValue(0),
+        useSharedValue(true),
+        useSharedValue(false),
+        originPreNestedScrollViewRef
+      ),
+      new PageItem(
+        'B',
+        PAGE_ITEM_HEIGHT,
+        useSharedValue(0),
+        useSharedValue(false),
+        useSharedValue(true),
+        useSharedValue(0),
+        useSharedValue(0),
+        useSharedValue(0),
+        useSharedValue(true),
+        useSharedValue(false),
+        originCurNestedScrollViewRef
+      ),
+      new PageItem(
+        'C',
+        PAGE_ITEM_HEIGHT,
+        useSharedValue(PAGE_ITEM_HEIGHT),
+        useSharedValue(false),
+        useSharedValue(true),
+        useSharedValue(0),
+        useSharedValue(0),
+        useSharedValue(0),
+        useSharedValue(true),
+        useSharedValue(false),
+        originNextNestedScrollViewRef
+      ),
     ])
   );
+
+  // 当前 page 实时整体页面位移值, 手指触摸移动以及松开手指还原状态时通过改变这个值达到动画位移的效果
+  const curPageItemTranslationY = pullTuNextHelperRef.current.getCurPageItemTranslationY();
+  const curPageItemIsTouching = pullTuNextHelperRef.current.getCurPageItemIsTouching();
+  const curPageItemIsEnabledGesture = pullTuNextHelperRef.current.getCurPageItemIsEnabledGesture();
 
   useEffect(() => {
     let pullTuNextHelper = pullTuNextHelperRef.current;
@@ -67,10 +112,6 @@ function App() {
   //endregion
 
   //region const values
-  const enableDebug = true;
-  const enablePullToNext = true;
-  const tag = enablePullToNext ? '[PullToNext]' : '[PullToRefresh]';
-
   const STATUS_CURRENT_PAGE = 0; // 默认状态
   const STATUS_CURRENT_PAGE_HEADER_LOADING = 100; // header 加载中
   const STATUS_CURRENT_PAGE_FOOTER_LOADING = -100; // footer 加载中
@@ -79,11 +120,7 @@ function App() {
   //endregion
 
   //region dynamic values
-  const enabledGesture = useSharedValue(true);
   const preStatus = useSharedValue(STATUS_CURRENT_PAGE);
-  const isTouching = useSharedValue(false);
-  // 当前 page 实时整体页面位移值, 手指触摸移动以及松开手指还原状态时通过改变这个值达到动画位移的效果
-  const curTranslationY = useSharedValue(STATUS_CURRENT_PAGE);
   // scrollView 手指触摸时内部内容滚动的实时位移值
   const lastY = useSharedValue(0);
   const curNestedTouchingOffset = useSharedValue(0);
@@ -94,7 +131,6 @@ function App() {
   //endregion
 
   //region scroll handles
-  const scrollPreHandler = useAnimatedScrollHandler(() => {});
   const scrollHandler = useAnimatedScrollHandler(({ contentOffset, layoutMeasurement, contentSize }) => {
     curNestedScrollY.value = Math.round(contentOffset.y);
     const curScrollHeight = layoutMeasurement.height + contentOffset.y;
@@ -112,30 +148,29 @@ function App() {
       console.log(tag, 'scrollHandler', '---- curScrollHeight=', curScrollHeight, 'contentSize=', contentSize);
     }
   });
-  const scrollNextHandler = useAnimatedScrollHandler(() => {});
   //endregion
 
   //region loading
   const finishLoading = (isHeader: boolean, goToNextPage: boolean = enablePullToNext) => {
     if (goToNextPage) {
       if (isHeader) {
-        if (curTranslationY.value !== STATUS_NEXT_PAGE) {
-          curTranslationY.value = withTiming(STATUS_NEXT_PAGE, { duration: 200 });
+        if (curPageItemTranslationY.value !== STATUS_NEXT_PAGE) {
+          curPageItemTranslationY.value = withTiming(STATUS_NEXT_PAGE, { duration: 200 });
         }
         if (preStatus.value !== STATUS_NEXT_PAGE) {
           preStatus.value = STATUS_NEXT_PAGE;
         }
       } else {
-        if (curTranslationY.value !== STATUS_PRE_PAGE) {
-          curTranslationY.value = withTiming(STATUS_PRE_PAGE, { duration: 200 });
+        if (curPageItemTranslationY.value !== STATUS_PRE_PAGE) {
+          curPageItemTranslationY.value = withTiming(STATUS_PRE_PAGE, { duration: 200 });
         }
         if (preStatus.value !== STATUS_PRE_PAGE) {
           preStatus.value = STATUS_PRE_PAGE;
         }
       }
     } else {
-      if (curTranslationY.value !== STATUS_CURRENT_PAGE) {
-        curTranslationY.value = withTiming(STATUS_CURRENT_PAGE, { duration: 200 });
+      if (curPageItemTranslationY.value !== STATUS_CURRENT_PAGE) {
+        curPageItemTranslationY.value = withTiming(STATUS_CURRENT_PAGE, { duration: 200 });
       }
       if (preStatus.value !== STATUS_CURRENT_PAGE) {
         preStatus.value = STATUS_CURRENT_PAGE;
@@ -146,7 +181,7 @@ function App() {
   const handleLoading = (isHeader: boolean) => {
     setTimeout(() => {
       finishLoading(isHeader);
-      enabledGesture.value = true;
+      curPageItemIsEnabledGesture.value = true;
     }, 1500);
   };
   //endregion
@@ -158,15 +193,15 @@ function App() {
     }
     pullTuNextHelperRef.current.getCurPageItemOriginNestedScrollViewRef()?.current?.scrollTo?.({
       x: undefined,
-      y: -curTranslationY.value + STATUS_CURRENT_PAGE,
+      y: -curPageItemTranslationY.value + STATUS_CURRENT_PAGE,
       animated: false,
     });
   };
   const restoreStatus = () => {
-    enabledGesture.value = true;
+    curPageItemIsEnabledGesture.value = true;
     preStatus.value = STATUS_CURRENT_PAGE;
-    isTouching.value = false;
-    curTranslationY.value = STATUS_CURRENT_PAGE;
+    curPageItemIsTouching.value = false;
+    curPageItemTranslationY.value = STATUS_CURRENT_PAGE;
     lastY.value = 0;
     curNestedTouchingOffset.value = 0;
     // curNestedScrollY.value = 0;
@@ -181,7 +216,7 @@ function App() {
   const panGesture = Gesture.Pan()
     .onBegin((e) => {
       lastY.value = e.y;
-      isTouching.value = true;
+      curPageItemIsTouching.value = true;
       if (enableDebug) {
         console.log(tag, 'onBegin', e.y);
       }
@@ -194,21 +229,21 @@ function App() {
       // move sheet if top or scrollview or is closed state
       if (isPullingUpToDown && curNestedScrollY.value === 0) {
         // current page changing translationY
-        curTranslationY.value = preStatus.value + e.translationY - curNestedTouchingOffset.value;
+        curPageItemTranslationY.value = preStatus.value + e.translationY - curNestedTouchingOffset.value;
         if (enableDebug) {
           console.log(
             tag,
             '页面下拉 translationY=',
             e.translationY,
             'curTranslationY=',
-            curTranslationY.value,
+            curPageItemTranslationY.value,
             'curNestedTouchingOffset=',
             curNestedTouchingOffset.value
           );
         }
         // capture movement, but don't move sheet
       } else if (!isPullingUpToDown && isCurNestedCanPullingDownToUp.value) {
-        curTranslationY.value = preStatus.value + e.translationY - curNestedTouchingOffset.value;
+        curPageItemTranslationY.value = preStatus.value + e.translationY - curNestedTouchingOffset.value;
         // currentPageTranslationY.value = -currentPageTranslationY.value;
         // currentPageTranslationY.value = e.translationY;
         if (enableDebug) {
@@ -217,7 +252,7 @@ function App() {
             '页面上拉 translationY=',
             e.translationY,
             'curTranslationY=',
-            curTranslationY.value,
+            curPageItemTranslationY.value,
             'curNestedTouchingOffset=',
             curNestedTouchingOffset.value,
             'preStatus=',
@@ -233,7 +268,7 @@ function App() {
       }
 
       // simulate scroll if user continues touching screen
-      if (preStatus.value !== STATUS_CURRENT_PAGE && curTranslationY.value < STATUS_CURRENT_PAGE) {
+      if (preStatus.value !== STATUS_CURRENT_PAGE && curPageItemTranslationY.value < STATUS_CURRENT_PAGE) {
         runOnJS(simulateScroll)();
       }
     })
@@ -242,33 +277,41 @@ function App() {
 
       // close sheet if velocity or travel is good
       if (e.translationY >= STATUS_CURRENT_PAGE_HEADER_LOADING && curNestedScrollY.value < 1) {
-        enabledGesture.value = false;
-        curTranslationY.value = withTiming(STATUS_CURRENT_PAGE_HEADER_LOADING, { duration: 200 }, (finished) => {
-          if (finished) {
-            runOnJS(handleLoading)(true);
+        curPageItemIsEnabledGesture.value = false;
+        curPageItemTranslationY.value = withTiming(
+          STATUS_CURRENT_PAGE_HEADER_LOADING,
+          { duration: 200 },
+          (finished) => {
+            if (finished) {
+              runOnJS(handleLoading)(true);
+            }
           }
-        });
+        );
         preStatus.value = STATUS_CURRENT_PAGE_HEADER_LOADING;
         // start header loading
       } else if (e.translationY <= STATUS_CURRENT_PAGE_FOOTER_LOADING && isCurNestedCanPullingDownToUp.value) {
         if (enableDebug) {
           console.log(tag, 'onEnd isCurNestedCanPullingDownToUp=', isCurNestedCanPullingDownToUp.value);
         }
-        enabledGesture.value = false;
-        curTranslationY.value = withTiming(STATUS_CURRENT_PAGE_FOOTER_LOADING, { duration: 200 }, (finished) => {
-          if (finished) {
-            runOnJS(handleLoading)(false);
+        curPageItemIsEnabledGesture.value = false;
+        curPageItemTranslationY.value = withTiming(
+          STATUS_CURRENT_PAGE_FOOTER_LOADING,
+          { duration: 200 },
+          (finished) => {
+            if (finished) {
+              runOnJS(handleLoading)(false);
+            }
           }
-        });
+        );
         preStatus.value = STATUS_CURRENT_PAGE_HEADER_LOADING;
         // start header loading
       } else {
-        curTranslationY.value = withTiming(preStatus.value, { duration: 200 });
+        curPageItemTranslationY.value = withTiming(preStatus.value, { duration: 200 });
       }
     })
     .onFinalize((_e) => {
       // stopped touching screen
-      isTouching.value = false;
+      curPageItemIsTouching.value = false;
       curNestedTouchingOffset.value = 0;
     })
     .simultaneousWithExternalGesture(pullTuNextHelperRef.current.getCurPageItemOriginNestedScrollViewRef())
@@ -276,12 +319,12 @@ function App() {
   //endregion
 
   //region props and styles
-  const scrollViewPreProps = useAnimatedProps(() => ({
-    // only scroll if sheet is open
-    // scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
-    // only bounce at bottom or not touching screen
-    // bounces: scrollY.value > 0 || !isTouching.value,
-  }));
+  // const scrollViewPreProps = useAnimatedProps(() => ({
+  // only scroll if sheet is open
+  // scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
+  // only bounce at bottom or not touching screen
+  // bounces: scrollY.value > 0 || !isTouching.value,
+  // }));
 
   const scrollViewProps = useAnimatedProps(() => ({
     // only scroll if sheet is open
@@ -290,31 +333,31 @@ function App() {
     // bounces: scrollY.value > 0 || !isTouching.value,
   }));
 
-  const scrollViewNextProps = useAnimatedProps(() => ({
-    // only scroll if sheet is open
-    // scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
-    // only bounce at bottom or not touching screen
-    // bounces: scrollY.value > 0 || !isTouching.value,
-  }));
+  // const scrollViewNextProps = useAnimatedProps(() => ({
+  // only scroll if sheet is open
+  // scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
+  // only bounce at bottom or not touching screen
+  // bounces: scrollY.value > 0 || !isTouching.value,
+  // }));
 
-  const sheetAnimatedPreStyle = useAnimatedStyle(() => ({
-    // don't open beyond the open limit
-    // transform: [
-    //   {
-    //     translateY: interpolate(
-    //       currentPageTranslationY.value,
-    //       [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, height],
-    //       [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
-    //       'clamp'
-    //     ),
-    //   },
-    // ],
-  }));
+  // const sheetAnimatedPreStyle = useAnimatedStyle(() => ({
+  // don't open beyond the open limit
+  // transform: [
+  //   {
+  //     translateY: interpolate(
+  //       currentPageTranslationY.value,
+  //       [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, height],
+  //       [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
+  //       'clamp'
+  //     ),
+  //   },
+  // ],
+  // }));
 
   const animatedStyles = StyleSheet.create({
     sheetAnimatedStyle: useAnimatedStyle(() => {
-      const isPullingUpToDown = curTranslationY.value >= 0;
-      const isPullingDownToUp = curTranslationY.value < 0;
+      const isPullingUpToDown = curPageItemTranslationY.value >= 0;
+      const isPullingDownToUp = curPageItemTranslationY.value < 0;
       if (enableDebug) {
         console.log(
           tag,
@@ -334,44 +377,44 @@ function App() {
             //   [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
             //   'clamp'
             // ),
-            translateY: curTranslationY.value,
+            translateY: curPageItemTranslationY.value,
           },
         ],
       };
     }),
   });
 
-  const sheetAnimatedStyle = useAnimatedStyle(() => ({
-    // don't open beyond the open limit
-    transform: [
-      {
-        translateY: interpolate(
-          curTranslationY.value,
-          [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, PAGE_ITEM_HEIGHT],
-          [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
-          'clamp'
-        ),
-      },
-    ],
-  }));
+  // const sheetAnimatedStyle = useAnimatedStyle(() => ({
+  //   // don't open beyond the open limit
+  //   transform: [
+  //     {
+  //       translateY: interpolate(
+  //         curPageItemTranslationY.value,
+  //         [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, PAGE_ITEM_HEIGHT],
+  //         [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
+  //         'clamp'
+  //       ),
+  //     },
+  //   ],
+  // }));
 
-  const sheetAnimatedNextStyle = useAnimatedStyle(() => ({
-    // don't open beyond the open limit
-    // transform: [
-    //   {
-    //     translateY: interpolate(
-    //       currentPageTranslationY.value,
-    //       [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, height],
-    //       [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
-    //       'clamp'
-    //     ),
-    //   },
-    // ],
-  }));
+  // const sheetAnimatedNextStyle = useAnimatedStyle(() => ({
+  // don't open beyond the open limit
+  // transform: [
+  //   {
+  //     translateY: interpolate(
+  //       currentPageTranslationY.value,
+  //       [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, height],
+  //       [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
+  //       'clamp'
+  //     ),
+  //   },
+  // ],
+  // }));
   //endregion
 
   const containerProps = useAnimatedProps<AnimateProps<ViewProps>>(() => ({
-    pointerEvents: enabledGesture.value ? 'auto' : 'none',
+    pointerEvents: curPageItemIsEnabledGesture.value ? 'auto' : 'none',
   }));
   return (
     <View style={{ flex: 1, position: 'relative' }}>
