@@ -1,7 +1,6 @@
 import { RefObject, useRef } from 'react';
 import { Gesture, PanGesture, ScrollView } from 'react-native-gesture-handler';
 import {
-  AnimatedStyleProp,
   runOnJS,
   SharedValue,
   useAnimatedProps,
@@ -10,7 +9,7 @@ import {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { ImageStyle, NativeScrollEvent, NativeSyntheticEvent, TextStyle, ViewStyle } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 export class PageItem {
   public readonly name: string;
@@ -23,10 +22,9 @@ export class PageItem {
   public readonly scrollY: SharedValue<number>;
   public readonly isCanPullingUpToDown: SharedValue<boolean>;
   public readonly isCanPullingDownToUp: SharedValue<boolean>;
-  private _scrollHandler: ((event: NativeSyntheticEvent<NativeScrollEvent>) => void) | null = null;
+  private _scrollHandler: ((event: NativeSyntheticEvent<NativeScrollEvent>) => void) | undefined = undefined;
   private _panGesture: PanGesture | null = null;
-  private _scrollViewProps: Partial<any> | null = null;
-  private _sheetAnimatedStyle: AnimatedStyleProp<ViewStyle | ImageStyle | TextStyle> | null = null;
+  private _scrollViewProps: Partial<any> | undefined = undefined;
   public readonly nestedScrollViewRef: RefObject<ScrollView>;
 
   public constructor(
@@ -55,7 +53,7 @@ export class PageItem {
     this.nestedScrollViewRef = nestedScrollViewRef;
   }
 
-  get scrollHandler(): ((event: NativeSyntheticEvent<NativeScrollEvent>) => void) | null {
+  get scrollHandler(): ((event: NativeSyntheticEvent<NativeScrollEvent>) => void) | undefined {
     return this._scrollHandler;
   }
 
@@ -63,12 +61,8 @@ export class PageItem {
     return this._panGesture;
   }
 
-  get scrollViewProps(): Partial<any> | null {
+  get scrollViewProps(): Partial<any> | undefined {
     return this._scrollViewProps;
-  }
-
-  get sheetAnimatedStyle(): AnimatedStyleProp<ViewStyle | ImageStyle | TextStyle> | null {
-    return this._sheetAnimatedStyle;
   }
 
   set scrollHandler(scrollHandler: (event: NativeSyntheticEvent<NativeScrollEvent>) => void) {
@@ -81,10 +75,6 @@ export class PageItem {
 
   set scrollViewProps(scrollViewProps: Partial<any>) {
     this._scrollViewProps = scrollViewProps;
-  }
-
-  set sheetAnimatedStyle(sheetAnimatedStyle: AnimatedStyleProp<ViewStyle | ImageStyle | TextStyle>) {
-    this._sheetAnimatedStyle = sheetAnimatedStyle;
   }
 
   public toString(): string {
@@ -187,33 +177,25 @@ function useAnimatedScrollHandlerCustom(pageItem: PageItem) {
 }
 
 function useAnimatedPropsCustom(pageItem: PageItem) {
-  pageItem.scrollViewProps = useAnimatedProps(() => ({
-    // only scroll if sheet is open
-    // scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
-    scrollEnabled: true,
-    // only bounce at bottom or not touching screen
-    // bounces: scrollY.value > 0 || !isTouching.value,
-  }));
+  pageItem.scrollViewProps = useAnimatedProps(() => {
+    return {
+      // only scroll if sheet is open
+      // scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
+      scrollEnabled: true,
+      // only bounce at bottom or not touching screen
+      // bounces: scrollY.value > 0 || !isTouching.value,
+    };
+  });
 }
 
-function useAnimatedStyleCustom(pageItem: PageItem) {
-  pageItem.sheetAnimatedStyle = useAnimatedStyle(() => {
+/**
+ * Error: Trying to convert a cyclic object to a shareable. This is not supported.
+ */
+export function useAnimatedStyleCustom(pageItem: PageItem) {
+  return useAnimatedStyle(() => {
     // const isPullingUpToDown = pageItem.translationY.value >= 0;
     // const isPullingDownToUp = pageItem.translationY.value < 0;
-    return {
-      // don't open beyond the open limit
-      transform: [
-        {
-          // translateY: interpolate(
-          //   currentPageTranslationY.value,
-          //   [0, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, windowHeight],
-          //   [STATUS_CURRENT_PAGE, STATUS_CURRENT_PAGE, STATUS_NEXT_PAGE, STATUS_NEXT_PAGE + 5],
-          //   'clamp'
-          // ),
-          translateY: pageItem.translationY.value,
-        },
-      ],
-    };
+    return { transform: [{ translateY: pageItem.translationY.value }] };
   });
 }
 
@@ -339,22 +321,19 @@ function usePanGesture(pageItem: PageItem) {
 export default function usePullToNextHelperRef(originPullToNextHelper: PullTuNextHelper) {
   const pullToNextHelperRef = useRef<PullTuNextHelper>(originPullToNextHelper);
 
-  // const pullToNextHelper = pullToNextHelperRef.current;
-  // const prePageItemOrigin = pullToNextHelper.getPrePageItemOrigin();
-  // const curPageItemOrigin = pullToNextHelper.getCurPageItemOrigin();
-  // const nextPageItemOrigin = pullToNextHelper.getNextPageItemOrigin();
-  // useAnimatedScrollHandlerCustom(prePageItemOrigin);
-  // useAnimatedScrollHandlerCustom(curPageItemOrigin);
-  // useAnimatedScrollHandlerCustom(nextPageItemOrigin);
-  // useAnimatedPropsCustom(prePageItemOrigin);
-  // useAnimatedPropsCustom(curPageItemOrigin);
-  // useAnimatedPropsCustom(nextPageItemOrigin);
-  // useAnimatedStyleCustom(prePageItemOrigin);
-  // useAnimatedStyleCustom(curPageItemOrigin);
-  // useAnimatedStyleCustom(nextPageItemOrigin);
-  // usePanGesture(prePageItemOrigin);
-  // usePanGesture(curPageItemOrigin);
-  // usePanGesture(nextPageItemOrigin);
+  const pullToNextHelper = pullToNextHelperRef.current;
+  const prePageItemOrigin = pullToNextHelper.getPrePageItemOrigin();
+  const curPageItemOrigin = pullToNextHelper.getCurPageItemOrigin();
+  const nextPageItemOrigin = pullToNextHelper.getNextPageItemOrigin();
+  useAnimatedScrollHandlerCustom(prePageItemOrigin);
+  useAnimatedScrollHandlerCustom(curPageItemOrigin);
+  useAnimatedScrollHandlerCustom(nextPageItemOrigin);
+  useAnimatedPropsCustom(prePageItemOrigin);
+  useAnimatedPropsCustom(curPageItemOrigin);
+  useAnimatedPropsCustom(nextPageItemOrigin);
+  usePanGesture(prePageItemOrigin);
+  usePanGesture(curPageItemOrigin);
+  usePanGesture(nextPageItemOrigin);
 
   return pullToNextHelperRef;
 }
