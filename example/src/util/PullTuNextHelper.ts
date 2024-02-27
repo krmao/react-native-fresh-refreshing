@@ -91,7 +91,7 @@ export class PageItem {
 
 // noinspection JSUnusedGlobalSymbols
 export class PullTuNextHelper {
-  public readonly pageItemArray: Array<PageItem>;
+  public pageItemArray: Array<PageItem>;
   public readonly pageItemOriginArray: Array<PageItem>;
 
   constructor(pageItemOriginArray: Array<PageItem>) {
@@ -165,6 +165,20 @@ export class PullTuNextHelper {
     return this.getNextPageItem().isEnabledGesture;
   };
   //endregion
+
+  public restore = () => {
+    this.pageItemArray = this.pageItemOriginArray.map((pageItem) => {
+      pageItem.translationY.value = 0;
+      pageItem.isTouching.value = false;
+      pageItem.isEnabledGesture.value = true;
+      pageItem.lastY.value = 0;
+      pageItem.touchingOffset.value = 0;
+      pageItem.scrollY.value = 0;
+      return {
+        ...pageItem,
+      } as PageItem;
+    });
+  };
 }
 
 function useAnimatedScrollHandlerCustom(pageItem: PageItem) {

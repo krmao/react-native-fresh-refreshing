@@ -96,7 +96,9 @@ function App() {
   }, [pullTuNextHelperRef]);
   //endregion
 
-  const restoreStatus = () => {};
+  const restoreStatus = () => {
+    pullTuNextHelperRef.current.restore();
+  };
   //endregion
 
   const containerProps = useAnimatedProps<AnimateProps<ViewProps>>(() => ({
