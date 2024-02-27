@@ -3,14 +3,26 @@ import React from 'react';
 
 export const Header = (
   <View
-    style={{ height: 80, backgroundColor: '#d92139', justifyContent: 'center', alignItems: 'center', borderRadius: 5 }}
+    style={{
+      height: 52,
+      backgroundColor: '#d9213955',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 5,
+    }}
   >
     <Text style={{ fontSize: 16, color: '#ffffff', fontWeight: 'bold' }}>HEADER</Text>
   </View>
 );
 export const Footer = (
   <View
-    style={{ height: 80, backgroundColor: '#d92139', justifyContent: 'center', alignItems: 'center', borderRadius: 5 }}
+    style={{
+      height: 52,
+      backgroundColor: '#d9213955',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 5,
+    }}
   >
     <Text style={{ fontSize: 16, color: '#ffffff', fontWeight: 'bold' }}>FOOTER</Text>
   </View>
@@ -21,7 +33,7 @@ export const ScrollViewContent = (
       <Pressable
         key={i}
         style={{
-          height: 48,
+          height: 42,
           borderBottomColor: '#ffffff',
           borderBottomWidth: StyleSheet.hairlineWidth,
           justifyContent: 'center',

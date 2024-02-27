@@ -32,7 +32,7 @@ const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollVie
   Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
 
 function App() {
-  const PAGE_ITEM_HEIGHT = Dimensions.get('window').height;
+  const PAGE_ITEM_HEIGHT = Dimensions.get('window').height / 3;
   const originPreNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originCurNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originNextNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
@@ -42,7 +42,7 @@ function App() {
       new PageItem(
         'A',
         PAGE_ITEM_HEIGHT,
-        useSharedValue(-PAGE_ITEM_HEIGHT),
+        useSharedValue(0),
         useSharedValue(false),
         useSharedValue(true),
         useSharedValue(0),
@@ -68,7 +68,7 @@ function App() {
       new PageItem(
         'C',
         PAGE_ITEM_HEIGHT,
-        useSharedValue(PAGE_ITEM_HEIGHT),
+        useSharedValue(0),
         useSharedValue(false),
         useSharedValue(true),
         useSharedValue(0),
@@ -104,52 +104,111 @@ function App() {
   const containerProps = useAnimatedProps<AnimateProps<ViewProps>>(() => ({
     pointerEvents: curPageItemIsEnabledGesture.value ? 'auto' : 'none',
   }));
-  // const sheetAnimatedStylePre = useAnimatedStyleCustom(pullTuNextHelperRef.current.getPrePageItemOrigin());
-  const sheetAnimatedStyle = useAnimatedStyleCustom(pullTuNextHelperRef.current.getCurPageItemOrigin());
-  // const sheetAnimatedStyleNext = useAnimatedStyleCustom(pullTuNextHelperRef.current.getNextPageItemOrigin());
-  return (
-    <View style={{ flex: 1, position: 'relative' }}>
-      <TouchableOpacity style={styles.restoreContainer} onPress={restoreStatus}>
-        <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#ffffff' }}>RESTORE</Text>
-      </TouchableOpacity>
-      <GestureDetector gesture={pullTuNextHelperRef.current.getCurPageItemOrigin().panGesture as PanGesture}>
-        <Animated.View style={{ flex: 1 }} animatedProps={containerProps}>
-          <Animated.View style={sheetAnimatedStyle}>
-            <View
-              style={[
-                {
-                  overflow: 'hidden',
-                  height: PAGE_ITEM_HEIGHT - 5,
-                  maxHeight: PAGE_ITEM_HEIGHT - 5,
-                  minHeight: PAGE_ITEM_HEIGHT - 5,
-                  marginTop: StatusBar.currentHeight,
-                  marginHorizontal: 5,
-                  marginBottom: 5,
-                },
-              ]}
-            >
-              {Header}
-              <View style={{ flex: 1, borderRadius: 5, overflow: 'hidden' }}>
-                <AnimatedScrollView
-                  ref={pullTuNextHelperRef.current.getCurPageItemOriginNestedScrollViewRef()}
-                  scrollEventThrottle={1}
-                  onScroll={pullTuNextHelperRef.current.getCurPageItemOrigin().scrollHandler}
-                  style={{ flex: 1 }}
-                  bounces={false}
-                  bouncesZoom={false}
-                  alwaysBounceVertical={false}
-                  alwaysBounceHorizontal={false}
-                  fadingEdgeLength={0}
-                  overScrollMode={'never'}
-                  animatedProps={pullTuNextHelperRef.current.getCurPageItemOrigin().scrollViewProps}
-                  contentContainerStyle={{}}
-                >
-                  {ScrollViewContent}
-                </AnimatedScrollView>
-              </View>
-              {Footer}
+  const sheetAnimatedStyleForPrePageItemOrigin = useAnimatedStyleCustom(
+    pullTuNextHelperRef.current.getPrePageItemOrigin()
+  );
+  const sheetAnimatedStyleForCurPageItemOrigin = useAnimatedStyleCustom(
+    pullTuNextHelperRef.current.getCurPageItemOrigin()
+  );
+  const sheetAnimatedStyleForNextPageItemOrigin = useAnimatedStyleCustom(
+    pullTuNextHelperRef.current.getNextPageItemOrigin()
+  );
+
+  const pageView = (pageItem: PageItem, sheetAnimatedStyle: any) => {
+    const isOriginPre = pageItem.name === 'A';
+    const isOriginCurrent = pageItem.name === 'B';
+    const isOriginNext = pageItem.name === 'C';
+    console.log('=====pageItem', pageItem.name);
+    console.log('=====isOriginPre', isOriginPre);
+    console.log('=====isOriginCurrent', isOriginCurrent);
+    console.log('=====isOriginNext', isOriginNext);
+    return (
+      <>
+        <Animated.View
+          style={[
+            sheetAnimatedStyle,
+            {
+              overflow: 'hidden',
+              height: PAGE_ITEM_HEIGHT,
+              maxHeight: PAGE_ITEM_HEIGHT,
+              minHeight: PAGE_ITEM_HEIGHT,
+              width: '100%',
+              backgroundColor: isOriginPre ? 'red' : isOriginNext ? 'blue' : 'green',
+              zIndex: isOriginPre ? 3 : isOriginNext ? 3 : 2,
+              top: isOriginPre ? 0 : isOriginNext ? PAGE_ITEM_HEIGHT + PAGE_ITEM_HEIGHT : PAGE_ITEM_HEIGHT,
+              position: 'absolute',
+            },
+          ]}
+        >
+          <View
+            style={[
+              {
+                overflow: 'hidden',
+                height: PAGE_ITEM_HEIGHT,
+                maxHeight: PAGE_ITEM_HEIGHT,
+                minHeight: PAGE_ITEM_HEIGHT,
+                width: '100%',
+              },
+            ]}
+          >
+            {Header}
+            <View style={{ flex: 1, borderRadius: 5, overflow: 'hidden' }}>
+              <AnimatedScrollView
+                ref={pageItem.nestedScrollViewRef}
+                scrollEventThrottle={1}
+                onScroll={pageItem.scrollHandler}
+                style={{ flex: 1 }}
+                bounces={false}
+                bouncesZoom={false}
+                alwaysBounceVertical={false}
+                alwaysBounceHorizontal={false}
+                fadingEdgeLength={0}
+                overScrollMode={'never'}
+                animatedProps={pageItem.scrollViewProps}
+                contentContainerStyle={{}}
+              >
+                {ScrollViewContent}
+              </AnimatedScrollView>
             </View>
-          </Animated.View>
+            {Footer}
+          </View>
+        </Animated.View>
+      </>
+    );
+  };
+  return (
+    <View
+      style={{
+        flex: 1,
+        overflow: 'hidden',
+        height: PAGE_ITEM_HEIGHT * 3,
+        maxHeight: PAGE_ITEM_HEIGHT * 3,
+        minHeight: PAGE_ITEM_HEIGHT * 3,
+        width: '100%',
+        backgroundColor: 'pink',
+        marginTop: StatusBar.currentHeight,
+      }}
+    >
+      <GestureDetector gesture={pullTuNextHelperRef.current.getCurPageItemOrigin().panGesture as PanGesture}>
+        <Animated.View
+          style={{
+            flex: 1,
+            position: 'relative',
+            overflow: 'hidden',
+            height: PAGE_ITEM_HEIGHT * 3,
+            maxHeight: PAGE_ITEM_HEIGHT * 3,
+            minHeight: PAGE_ITEM_HEIGHT * 3,
+            width: '100%',
+            backgroundColor: 'cyan',
+          }}
+          animatedProps={containerProps}
+        >
+          {pageView(pullTuNextHelperRef.current.getPrePageItemOrigin(), sheetAnimatedStyleForPrePageItemOrigin)}
+          {pageView(pullTuNextHelperRef.current.getCurPageItemOrigin(), sheetAnimatedStyleForCurPageItemOrigin)}
+          {pageView(pullTuNextHelperRef.current.getNextPageItemOrigin(), sheetAnimatedStyleForNextPageItemOrigin)}
+          <TouchableOpacity style={styles.restoreContainer} onPress={restoreStatus}>
+            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#ffffff' }}>RESTORE</Text>
+          </TouchableOpacity>
         </Animated.View>
       </GestureDetector>
     </View>
