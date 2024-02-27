@@ -5,7 +5,7 @@ export const Header = (
   <View
     style={{
       height: 52,
-      backgroundColor: '#d9213955',
+      backgroundColor: '#22222222',
       justifyContent: 'center',
       alignItems: 'center',
       borderRadius: 5,
@@ -18,7 +18,7 @@ export const Footer = (
   <View
     style={{
       height: 52,
-      backgroundColor: '#d9213955',
+      backgroundColor: '#22222222',
       justifyContent: 'center',
       alignItems: 'center',
       borderRadius: 5,

@@ -13,6 +13,7 @@ import {
   ViewProps,
 } from 'react-native';
 import {
+  Gesture,
   GestureDetector,
   gestureHandlerRootHOC,
   PanGesture,
@@ -81,9 +82,6 @@ function App() {
     ])
   );
 
-  // 当前 page 实时整体页面位移值, 手指触摸移动以及松开手指还原状态时通过改变这个值达到动画位移的效果
-  const curPageItemIsEnabledGesture = pullTuNextHelperRef.current.getCurPageItemIsEnabledGesture();
-
   useEffect(() => {
     let pullTuNextHelper = pullTuNextHelperRef.current;
     console.log('---- cur=', pullTuNextHelper.getCurPageItem().toString());
@@ -102,7 +100,8 @@ function App() {
   //endregion
 
   const containerProps = useAnimatedProps<AnimateProps<ViewProps>>(() => ({
-    pointerEvents: curPageItemIsEnabledGesture.value ? 'auto' : 'none',
+    // pointerEvents: curPageItemIsEnabledGesture.value ? 'auto' : 'none',
+    pointerEvents: 'auto',
   }));
   const sheetAnimatedStyleForPrePageItemOrigin = useAnimatedStyleCustom(
     pullTuNextHelperRef.current.getPrePageItemOrigin()
@@ -176,6 +175,12 @@ function App() {
       </>
     );
   };
+
+  const composedGesture = Gesture.Race(
+    pullTuNextHelperRef.current.getPrePageItemOrigin().panGesture as PanGesture,
+    pullTuNextHelperRef.current.getCurPageItemOrigin().panGesture as PanGesture,
+    pullTuNextHelperRef.current.getNextPageItemOrigin().panGesture as PanGesture
+  );
   return (
     <View
       style={{
@@ -189,7 +194,7 @@ function App() {
         marginTop: StatusBar.currentHeight,
       }}
     >
-      <GestureDetector gesture={pullTuNextHelperRef.current.getCurPageItemOrigin().panGesture as PanGesture}>
+      <GestureDetector gesture={composedGesture}>
         <Animated.View
           style={{
             flex: 1,
