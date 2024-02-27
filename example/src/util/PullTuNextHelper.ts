@@ -174,6 +174,7 @@ export class PullTuNextHelper {
       pageItem.lastY.value = 0;
       pageItem.touchingOffset.value = 0;
       pageItem.scrollY.value = 0;
+      pageItem.nestedScrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: true });
       return {
         ...pageItem,
       } as PageItem;

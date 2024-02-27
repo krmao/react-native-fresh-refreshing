@@ -1,6 +1,6 @@
 // noinspection JSUnusedLocalSymbols
 
-import React, { RefAttributes, RefObject, useEffect, useRef } from 'react';
+import React, { RefAttributes, RefObject, useRef } from 'react';
 import {
   Dimensions,
   ScrollView as RNScrollView,
@@ -37,7 +37,6 @@ function App() {
   const originPreNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originCurNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originNextNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
-  //region refs
   const pullTuNextHelperRef = usePullToNextHelperRef(
     new PullTuNextHelper([
       new PageItem(
@@ -82,24 +81,9 @@ function App() {
     ])
   );
 
-  useEffect(() => {
-    let pullTuNextHelper = pullTuNextHelperRef.current;
-    console.log('---- cur=', pullTuNextHelper.getCurPageItem().toString());
-    for (let i = 0; i < 5; i++) {
-      pullTuNextHelperRef.current.moveToNextItem();
-      console.log('---- cur=', pullTuNextHelper.getCurPageItem().toString());
-    }
-    for (let i = 0; i < 5; i++) {
-      pullTuNextHelperRef.current.moveToPreItem();
-      console.log('---- cur=', pullTuNextHelper.getCurPageItem().toString());
-    }
-  }, [pullTuNextHelperRef]);
-  //endregion
-
   const restoreStatus = () => {
     pullTuNextHelperRef.current.restore();
   };
-  //endregion
 
   const containerProps = useAnimatedProps<AnimateProps<ViewProps>>(() => ({
     // pointerEvents: curPageItemIsEnabledGesture.value ? 'auto' : 'none',
@@ -178,7 +162,7 @@ function App() {
     );
   };
 
-  const composedGesture = Gesture.Race(
+  const composedGesture = Gesture.Exclusive(
     pullTuNextHelperRef.current.getPrePageItemOrigin().panGesture as PanGesture,
     pullTuNextHelperRef.current.getCurPageItemOrigin().panGesture as PanGesture,
     pullTuNextHelperRef.current.getNextPageItemOrigin().panGesture as PanGesture
