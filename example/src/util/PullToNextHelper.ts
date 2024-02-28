@@ -2,6 +2,7 @@ import React, { RefObject, useRef } from 'react';
 import { Gesture, PanGesture, ScrollView } from 'react-native-gesture-handler';
 import {
   AnimatableValue,
+  AnimateProps,
   runOnJS,
   SharedValue,
   useAnimatedProps,
@@ -9,7 +10,7 @@ import {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent, ViewProps } from 'react-native';
 
 export class PageItem {
   public readonly name: string;
@@ -29,6 +30,7 @@ export class PageItem {
   private _scrollHandler: ((event: NativeSyntheticEvent<NativeScrollEvent>) => void) | undefined = undefined;
   private _panGesture: PanGesture | null = null;
   private _scrollViewProps: Partial<any> | undefined = undefined;
+  private _containerAnimatedProps: Partial<AnimateProps<ViewProps>> | undefined = undefined;
   public readonly nestedScrollViewRef: RefObject<ScrollView>;
   public readonly statusDefaultTranslation: number = 0; // 默认状态
   public readonly statusHeaderTranslation: number = 52; // HEADER 加载中
@@ -91,6 +93,9 @@ export class PageItem {
   get scrollViewProps(): Partial<any> | undefined {
     return this._scrollViewProps;
   }
+  get containerAnimatedProps(): Partial<AnimateProps<ViewProps>> | undefined {
+    return this._containerAnimatedProps;
+  }
 
   set scrollHandler(scrollHandler: (event: NativeSyntheticEvent<NativeScrollEvent>) => void) {
     this._scrollHandler = scrollHandler;
@@ -102,6 +107,9 @@ export class PageItem {
 
   set scrollViewProps(scrollViewProps: Partial<any>) {
     this._scrollViewProps = scrollViewProps;
+  }
+  set containerAnimatedProps(containerProps: Partial<AnimateProps<ViewProps>>) {
+    this._containerAnimatedProps = containerProps;
   }
 
   public toString(): string {
@@ -118,14 +126,12 @@ export class PageItem {
 
 // noinspection JSUnusedGlobalSymbols
 export class PullToNextHelper {
-  public pageItemArray: Array<PageItem>;
   public readonly pageItemOriginArray: Array<PageItem>;
 
   constructor(pageItemOriginArray: Array<PageItem>) {
     this.pageItemOriginArray = pageItemOriginArray.map((item) => {
       return { ...item };
     }) as Array<PageItem>;
-    this.pageItemArray = [...pageItemOriginArray];
   }
 
   //region 最初原始的
@@ -177,7 +183,7 @@ export class PullToNextHelper {
   };
 
   public reset = (filter?: (pageItem: PageItem) => PageItem) => {
-    this.pageItemArray = this.pageItemOriginArray.map((pageItem) => {
+    this.pageItemOriginArray.forEach((pageItem) => {
       pageItem.top.value = PullToNextHelper.getDefaultTop(pageItem.name, pageItem.height);
       pageItem.preStatus.value = pageItem.statusDefaultTranslation;
       pageItem.translationY.value = pageItem.statusDefaultTranslation;
@@ -187,10 +193,7 @@ export class PullToNextHelper {
       pageItem.touchingOffset.value = 0;
       pageItem.scrollY.value = 0;
       pageItem.nestedScrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: true });
-      if (filter) {
-        pageItem = filter(pageItem);
-      }
-      return { ...pageItem } as PageItem;
+      filter?.(pageItem);
     });
   };
 }
@@ -214,6 +217,10 @@ function useAnimatedPropsCustom(pageItem: PageItem) {
       // bounces: scrollY.value > 0 || !isTouching.value,
     };
   });
+  pageItem.containerAnimatedProps = useAnimatedProps<AnimateProps<ViewProps>>(() => ({
+    // pointerEvents: curPageItemIsEnabledGesture.value ? 'auto' : 'none',
+    pointerEvents: 'auto',
+  }));
 }
 
 export function useAnimatedStyleCustom(pageItem: PageItem) {
