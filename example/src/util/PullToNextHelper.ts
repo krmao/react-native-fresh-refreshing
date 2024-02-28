@@ -32,21 +32,23 @@ export class PageItem {
   private _scrollViewProps: Partial<any> | undefined = undefined;
   private _containerAnimatedProps: Partial<AnimateProps<ViewProps>> | undefined = undefined;
   public readonly nestedScrollViewRef: RefObject<ScrollView>;
-  public readonly statusDefaultTranslation: number = 0; // 默认状态
-  public readonly statusHeaderTranslation: number = 52; // HEADER 加载中
-  public readonly statusFooterTranslation: number = -52; // FOOTER 加载中
-  public readonly statusPreTranslation: number = 0; // 上一页
-  public readonly statusNextTranslation: number = 0; // 下一页
-  public readonly animatedDuration: number = 300; // 动画时长
+  public readonly statusDefaultTranslationY: number = 0; // 默认状态
+  public readonly statusHeaderTranslationY: number = 52; // HEADER 加载中
+  public readonly statusFooterTranslationY: number = -52; // FOOTER 加载中
+  public readonly statusPreTranslationY: number = 0; // 上一页
+  public readonly statusNextTranslationY: number = 0; // 下一页
+  public readonly animatedDurationForGoToDefault: number = 300;
+  public readonly animatedDurationForGoToLoading: number = 300;
+  public readonly animatedDurationForGoToPreOrNext: number = 500;
 
   public constructor(
     name: string,
     height: number,
-    statusDefaultTranslation: number,
-    statusHeaderTranslation: number,
-    statusFooterTranslation: number,
-    statusPreTranslation: number,
-    statusNextTranslation: number,
+    statusDefaultTranslationY: number,
+    statusHeaderTranslationY: number,
+    statusFooterTranslationY: number,
+    statusPreTranslationY: number,
+    statusNextTranslationY: number,
     backgroundColor: string,
     preStatus: SharedValue<number>,
     top: SharedValue<number>,
@@ -76,11 +78,11 @@ export class PageItem {
     this.isCanPullingUpToDown = isCanPullingUpToDown;
     this.isCanPullingDownToUp = isCanPullingDownToUp;
     this.nestedScrollViewRef = nestedScrollViewRef;
-    this.statusDefaultTranslation = statusDefaultTranslation;
-    this.statusHeaderTranslation = statusHeaderTranslation;
-    this.statusFooterTranslation = statusFooterTranslation;
-    this.statusPreTranslation = statusPreTranslation;
-    this.statusNextTranslation = statusNextTranslation;
+    this.statusDefaultTranslationY = statusDefaultTranslationY;
+    this.statusHeaderTranslationY = statusHeaderTranslationY;
+    this.statusFooterTranslationY = statusFooterTranslationY;
+    this.statusPreTranslationY = statusPreTranslationY;
+    this.statusNextTranslationY = statusNextTranslationY;
   }
 
   get scrollHandler(): ((event: NativeSyntheticEvent<NativeScrollEvent>) => void) | undefined {
@@ -186,8 +188,8 @@ export class PullToNextHelper {
   public reset = (filter?: (pageItem: PageItem) => PageItem) => {
     this.pageItemOriginArray.forEach((pageItem) => {
       pageItem.top.value = PullToNextHelper.getDefaultTop(pageItem.name, pageItem.height);
-      pageItem.preStatus.value = pageItem.statusDefaultTranslation;
-      pageItem.translationY.value = pageItem.statusDefaultTranslation;
+      pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
+      pageItem.translationY.value = pageItem.statusDefaultTranslationY;
       pageItem.isTouching.value = false;
       pageItem.isEnabledGesture.value = true;
       pageItem.lastY.value = 0;
@@ -243,7 +245,7 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
   const simulateScroll = () => {
     pageItem.nestedScrollViewRef?.current?.scrollTo?.({
       x: undefined,
-      y: -pageItem.translationY.value + pageItem.statusDefaultTranslation,
+      y: -pageItem.translationY.value + pageItem.statusDefaultTranslationY,
       animated: false,
     });
   };
@@ -256,64 +258,64 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
   const finishLoading = (isHeader: boolean, goToNextPage: boolean = true) => {
     if (goToNextPage) {
       if (isHeader) {
-        if (pageItem.preStatus.value !== pageItem.statusNextTranslation) {
-          pageItem.preStatus.value = pageItem.statusNextTranslation;
+        if (pageItem.preStatus.value !== pageItem.statusNextTranslationY) {
+          pageItem.preStatus.value = pageItem.statusNextTranslationY;
         }
-        if (pageItem.translationY.value !== pageItem.statusNextTranslation) {
-          pageItem.translationY.value = withTiming(pageItem.statusNextTranslation, {
-            duration: pageItem.animatedDuration,
+        if (pageItem.translationY.value !== pageItem.statusNextTranslationY) {
+          pageItem.translationY.value = withTiming(pageItem.statusNextTranslationY, {
+            duration: pageItem.animatedDurationForGoToPreOrNext,
           });
           prePageItem.translationY.value = withTiming(
-            prePageItem.statusNextTranslation,
-            { duration: prePageItem.animatedDuration },
+            prePageItem.statusNextTranslationY,
+            { duration: prePageItem.animatedDurationForGoToPreOrNext },
             (finished?: boolean, _current?: AnimatableValue) => {
               if (finished) {
                 const curPageItemTopValue = pageItem.top.value;
                 pageItem.top.value = nextPageItem.top.value;
-                pageItem.translationY.value = pageItem.statusDefaultTranslation;
-                pageItem.preStatus.value = pageItem.statusDefaultTranslation;
+                pageItem.translationY.value = pageItem.statusDefaultTranslationY;
+                pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
                 pageItem.zIndex.value = 2;
 
                 nextPageItem.top.value = prePageItem.top.value;
-                nextPageItem.translationY.value = nextPageItem.statusDefaultTranslation;
-                nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslation;
+                nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
+                nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslationY;
                 nextPageItem.zIndex.value = 2;
 
                 prePageItem.top.value = curPageItemTopValue;
-                prePageItem.translationY.value = prePageItem.statusDefaultTranslation;
-                prePageItem.preStatus.value = prePageItem.statusDefaultTranslation;
+                prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
+                prePageItem.preStatus.value = prePageItem.statusDefaultTranslationY;
                 prePageItem.zIndex.value = 1;
               }
             }
           );
         }
       } else {
-        if (pageItem.preStatus.value !== pageItem.statusPreTranslation) {
-          pageItem.preStatus.value = pageItem.statusPreTranslation;
+        if (pageItem.preStatus.value !== pageItem.statusPreTranslationY) {
+          pageItem.preStatus.value = pageItem.statusPreTranslationY;
         }
-        if (pageItem.translationY.value !== pageItem.statusPreTranslation) {
-          pageItem.translationY.value = withTiming(pageItem.statusPreTranslation, {
-            duration: pageItem.animatedDuration,
+        if (pageItem.translationY.value !== pageItem.statusPreTranslationY) {
+          pageItem.translationY.value = withTiming(pageItem.statusPreTranslationY, {
+            duration: pageItem.animatedDurationForGoToPreOrNext,
           });
           nextPageItem.translationY.value = withTiming(
-            nextPageItem.statusPreTranslation,
-            { duration: nextPageItem.animatedDuration },
+            nextPageItem.statusPreTranslationY,
+            { duration: nextPageItem.animatedDurationForGoToPreOrNext },
             (finished?: boolean, _current?: AnimatableValue) => {
               if (finished) {
                 const curPageItemTopValue = pageItem.top.value;
                 pageItem.top.value = prePageItem.top.value;
-                pageItem.translationY.value = pageItem.statusDefaultTranslation;
-                pageItem.preStatus.value = pageItem.statusDefaultTranslation;
+                pageItem.translationY.value = pageItem.statusDefaultTranslationY;
+                pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
                 pageItem.zIndex.value = 2;
 
                 prePageItem.top.value = nextPageItem.top.value;
-                prePageItem.translationY.value = prePageItem.statusDefaultTranslation;
-                prePageItem.preStatus.value = prePageItem.statusDefaultTranslation;
+                prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
+                prePageItem.preStatus.value = prePageItem.statusDefaultTranslationY;
                 prePageItem.zIndex.value = 2;
 
                 nextPageItem.top.value = curPageItemTopValue;
-                nextPageItem.translationY.value = nextPageItem.statusDefaultTranslation;
-                nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslation;
+                nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
+                nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslationY;
                 nextPageItem.zIndex.value = 1;
               }
             }
@@ -321,13 +323,13 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
         }
       }
     } else {
-      if (pageItem.translationY.value !== pageItem.statusDefaultTranslation) {
-        pageItem.translationY.value = withTiming(pageItem.statusDefaultTranslation, {
-          duration: pageItem.animatedDuration,
+      if (pageItem.translationY.value !== pageItem.statusDefaultTranslationY) {
+        pageItem.translationY.value = withTiming(pageItem.statusDefaultTranslationY, {
+          duration: pageItem.animatedDurationForGoToDefault,
         });
       }
-      if (pageItem.preStatus.value !== pageItem.statusDefaultTranslation) {
-        pageItem.preStatus.value = pageItem.statusDefaultTranslation;
+      if (pageItem.preStatus.value !== pageItem.statusDefaultTranslationY) {
+        pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
       }
     }
   };
@@ -352,8 +354,8 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
 
       // simulate scroll if user continues touching screen
       if (
-        pageItem.preStatus.value !== pageItem.statusDefaultTranslation &&
-        pageItem.scrollY.value < pageItem.statusDefaultTranslation
+        pageItem.preStatus.value !== pageItem.statusDefaultTranslationY &&
+        pageItem.scrollY.value < pageItem.statusDefaultTranslationY
       ) {
         runOnJS(simulateScroll)();
       }
@@ -362,34 +364,36 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
       // default on worklet thread, https://github.com/software-mansion/react-native-gesture-handler/issues/2300
 
       // close sheet if velocity or travel is good
-      if (e.translationY >= pageItem.statusHeaderTranslation && pageItem.scrollY.value < 1) {
+      if (e.translationY >= pageItem.statusHeaderTranslationY && pageItem.scrollY.value < 1) {
         pageItem.isEnabledGesture.value = false;
         pageItem.translationY.value = withTiming(
-          pageItem.statusHeaderTranslation,
-          { duration: pageItem.animatedDuration },
+          pageItem.statusHeaderTranslationY,
+          { duration: pageItem.animatedDurationForGoToLoading },
           (finished) => {
             if (finished) {
               runOnJS(handleLoading)(true);
             }
           }
         );
-        pageItem.preStatus.value = pageItem.statusHeaderTranslation;
+        pageItem.preStatus.value = pageItem.statusHeaderTranslationY;
         // start header loading
-      } else if (e.translationY <= pageItem.statusFooterTranslation && pageItem.isCanPullingDownToUp.value) {
+      } else if (e.translationY <= pageItem.statusFooterTranslationY && pageItem.isCanPullingDownToUp.value) {
         pageItem.isEnabledGesture.value = false;
         pageItem.translationY.value = withTiming(
-          pageItem.statusFooterTranslation,
-          { duration: pageItem.animatedDuration },
+          pageItem.statusFooterTranslationY,
+          { duration: pageItem.animatedDurationForGoToLoading },
           (finished) => {
             if (finished) {
               runOnJS(handleLoading)(false);
             }
           }
         );
-        pageItem.preStatus.value = pageItem.statusHeaderTranslation;
+        pageItem.preStatus.value = pageItem.statusHeaderTranslationY;
         // start header loading
       } else {
-        pageItem.translationY.value = withTiming(pageItem.preStatus.value, { duration: pageItem.animatedDuration });
+        pageItem.translationY.value = withTiming(pageItem.preStatus.value, {
+          duration: pageItem.animatedDurationForGoToLoading,
+        });
       }
     })
     .onFinalize((_e) => {

@@ -86,9 +86,13 @@ const PageItemView = ({ pageItem, containerAnimatedStyle }: { pageItem: PageItem
 };
 
 function App() {
-  const defaultCurTopInPageContainer = 15; // 默认当前页面的 top 值从容器的什么地方开始, 决定了顶部是否漏出一点上一个页面
+  // const defaultCurTopInPageContainer = 15; // 默认当前页面的 top 值从容器的什么地方开始, 决定了顶部是否漏出一点上一个页面
+  // const PAGE_CONTAINER_HEIGHT = Dimensions.get('window').height; // 容器高度
+  // const PAGE_ITEM_HEIGHT = PAGE_CONTAINER_HEIGHT - 15 - 15; // 每一页的高度
+
+  const defaultCurTopInPageContainer = 0; // 默认当前页面的 top 值从容器的什么地方开始, 决定了顶部是否漏出一点上一个页面
   const PAGE_CONTAINER_HEIGHT = Dimensions.get('window').height; // 容器高度
-  const PAGE_ITEM_HEIGHT = PAGE_CONTAINER_HEIGHT - 15 - 15; // 每一页的高度
+  const PAGE_ITEM_HEIGHT = PAGE_CONTAINER_HEIGHT; // 每一页的高度
 
   const originPreNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originCurNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
