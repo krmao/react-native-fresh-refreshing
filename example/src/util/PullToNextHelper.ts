@@ -255,6 +255,46 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
       pageItem.isEnabledGesture.value = true;
     }, 1500);
   };
+  const updateStatusAfterGoToNext = (duration: number) => {
+    setTimeout(() => {
+      const curPageItemTopValue = pageItem.top.value;
+      pageItem.top.value = nextPageItem.top.value;
+      pageItem.translationY.value = pageItem.statusDefaultTranslationY;
+      pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
+      pageItem.zIndex.value = 2;
+
+      nextPageItem.top.value = prePageItem.top.value;
+      nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
+      nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslationY;
+      nextPageItem.zIndex.value = 2;
+
+      prePageItem.top.value = curPageItemTopValue;
+      prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
+      prePageItem.preStatus.value = prePageItem.statusDefaultTranslationY;
+      prePageItem.zIndex.value = 1;
+    }, duration);
+  };
+
+  const updateStatusAfterGoToPre = (duration: number) => {
+    setTimeout(() => {
+      const curPageItemTopValue = pageItem.top.value;
+      pageItem.top.value = prePageItem.top.value;
+      pageItem.translationY.value = pageItem.statusDefaultTranslationY;
+      pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
+      pageItem.zIndex.value = 2;
+
+      prePageItem.top.value = nextPageItem.top.value;
+      prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
+      prePageItem.preStatus.value = prePageItem.statusDefaultTranslationY;
+      prePageItem.zIndex.value = 2;
+
+      nextPageItem.top.value = curPageItemTopValue;
+      nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
+      nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslationY;
+      nextPageItem.zIndex.value = 1;
+    }, duration);
+  };
+
   const finishLoading = (isHeader: boolean, goToNextPage: boolean = true) => {
     if (goToNextPage) {
       if (isHeader) {
@@ -270,21 +310,8 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
             { duration: prePageItem.animatedDurationForGoToPreOrNext },
             (finished?: boolean, _current?: AnimatableValue) => {
               if (finished) {
-                const curPageItemTopValue = pageItem.top.value;
-                pageItem.top.value = nextPageItem.top.value;
-                pageItem.translationY.value = pageItem.statusDefaultTranslationY;
-                pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
-                pageItem.zIndex.value = 2;
-
-                nextPageItem.top.value = prePageItem.top.value;
-                nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
-                nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslationY;
-                nextPageItem.zIndex.value = 2;
-
-                prePageItem.top.value = curPageItemTopValue;
-                prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
-                prePageItem.preStatus.value = prePageItem.statusDefaultTranslationY;
-                prePageItem.zIndex.value = 1;
+                // 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
+                runOnJS(updateStatusAfterGoToNext)(0);
               }
             }
           );
@@ -302,21 +329,8 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
             { duration: nextPageItem.animatedDurationForGoToPreOrNext },
             (finished?: boolean, _current?: AnimatableValue) => {
               if (finished) {
-                const curPageItemTopValue = pageItem.top.value;
-                pageItem.top.value = prePageItem.top.value;
-                pageItem.translationY.value = pageItem.statusDefaultTranslationY;
-                pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
-                pageItem.zIndex.value = 2;
-
-                prePageItem.top.value = nextPageItem.top.value;
-                prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
-                prePageItem.preStatus.value = prePageItem.statusDefaultTranslationY;
-                prePageItem.zIndex.value = 2;
-
-                nextPageItem.top.value = curPageItemTopValue;
-                nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
-                nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslationY;
-                nextPageItem.zIndex.value = 1;
+                // 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
+                runOnJS(updateStatusAfterGoToPre)(0);
               }
             }
           );
