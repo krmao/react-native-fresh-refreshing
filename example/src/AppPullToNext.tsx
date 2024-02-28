@@ -31,8 +31,9 @@ const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollVie
   Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
 
 function App() {
-  const defaultCurTop = 15; // 默认当前页面的 top 值从什么地方开始, 决定了顶部是否漏出一点上一个页面
-  const PAGE_ITEM_HEIGHT = Dimensions.get('window').height - 15 - 15; // 每一页的高度
+  const defaultCurTopInPageContainer = 15; // 默认当前页面的 top 值从容器的什么地方开始, 决定了顶部是否漏出一点上一个页面
+  const PAGE_CONTAINER_HEIGHT = Dimensions.get('window').height; // 容器高度
+  const PAGE_ITEM_HEIGHT = PAGE_CONTAINER_HEIGHT - 15 - 15; // 每一页的高度
 
   const originPreNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originCurNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
@@ -50,7 +51,7 @@ function App() {
         PAGE_ITEM_HEIGHT,
         'red',
         useSharedValue(0),
-        useSharedValue(PullToNextHelper.getDefaultTop('A', PAGE_ITEM_HEIGHT, defaultCurTop)),
+        useSharedValue(PullToNextHelper.getDefaultTop('A', PAGE_ITEM_HEIGHT, defaultCurTopInPageContainer)),
         useSharedValue(2),
         useSharedValue(0),
         useSharedValue(false),
@@ -72,7 +73,7 @@ function App() {
         PAGE_ITEM_HEIGHT,
         'green',
         useSharedValue(0),
-        useSharedValue(PullToNextHelper.getDefaultTop('B', PAGE_ITEM_HEIGHT, defaultCurTop)),
+        useSharedValue(PullToNextHelper.getDefaultTop('B', PAGE_ITEM_HEIGHT, defaultCurTopInPageContainer)),
         useSharedValue(1),
         useSharedValue(0),
         useSharedValue(false),
@@ -94,7 +95,7 @@ function App() {
         PAGE_ITEM_HEIGHT,
         'blue',
         useSharedValue(0),
-        useSharedValue(PullToNextHelper.getDefaultTop('C', PAGE_ITEM_HEIGHT, defaultCurTop)),
+        useSharedValue(PullToNextHelper.getDefaultTop('C', PAGE_ITEM_HEIGHT, defaultCurTopInPageContainer)),
         useSharedValue(2),
         useSharedValue(0),
         useSharedValue(false),
@@ -186,9 +187,9 @@ function App() {
       style={{
         flex: 1,
         overflow: 'hidden',
-        height: PAGE_ITEM_HEIGHT * 3,
-        maxHeight: PAGE_ITEM_HEIGHT * 3,
-        minHeight: PAGE_ITEM_HEIGHT * 3,
+        height: PAGE_CONTAINER_HEIGHT,
+        maxHeight: PAGE_CONTAINER_HEIGHT,
+        minHeight: PAGE_CONTAINER_HEIGHT,
         width: '100%',
         backgroundColor: 'pink',
         marginTop: StatusBar.currentHeight,
@@ -200,10 +201,6 @@ function App() {
             flex: 1,
             position: 'relative',
             overflow: 'hidden',
-            height: PAGE_ITEM_HEIGHT * 3,
-            maxHeight: PAGE_ITEM_HEIGHT * 3,
-            minHeight: PAGE_ITEM_HEIGHT * 3,
-            width: '100%',
             backgroundColor: '#efefef',
           }}
           animatedProps={containerProps}
@@ -212,7 +209,7 @@ function App() {
           {pageView(pullTuNextHelperRef.current.getCurPageItemOrigin(), sheetAnimatedStyleForCurPageItemOrigin)}
           {pageView(pullTuNextHelperRef.current.getNextPageItemOrigin(), sheetAnimatedStyleForNextPageItemOrigin)}
           <TouchableOpacity
-            style={styles.restoreContainer}
+            style={styles.resetContainer}
             onPress={() => {
               pullTuNextHelperRef.current.reset();
             }}
@@ -228,8 +225,8 @@ function App() {
 export default gestureHandlerRootHOC(App);
 
 const styles = StyleSheet.create({
-  restoreContainer: {
-    zIndex: 10,
+  resetContainer: {
+    zIndex: 999,
     position: 'absolute',
     right: 0,
     bottom: 80,
