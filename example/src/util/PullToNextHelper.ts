@@ -262,14 +262,17 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
                 pageItem.top.value = nextPageItem.top.value;
                 pageItem.translationY.value = pageItem.statusDefaultTranslation;
                 pageItem.preStatus.value = pageItem.statusDefaultTranslation;
+                pageItem.zIndex.value = 2;
 
                 nextPageItem.top.value = prePageItem.top.value;
                 nextPageItem.translationY.value = nextPageItem.statusDefaultTranslation;
                 nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslation;
+                nextPageItem.zIndex.value = 2;
 
                 prePageItem.top.value = curPageItemTopValue;
                 prePageItem.translationY.value = prePageItem.statusDefaultTranslation;
                 prePageItem.preStatus.value = prePageItem.statusDefaultTranslation;
+                prePageItem.zIndex.value = 1;
               }
             }
           );
@@ -289,14 +292,17 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
                 pageItem.top.value = prePageItem.top.value;
                 pageItem.translationY.value = pageItem.statusDefaultTranslation;
                 pageItem.preStatus.value = pageItem.statusDefaultTranslation;
+                pageItem.zIndex.value = 2;
 
                 prePageItem.top.value = nextPageItem.top.value;
                 prePageItem.translationY.value = prePageItem.statusDefaultTranslation;
                 prePageItem.preStatus.value = prePageItem.statusDefaultTranslation;
+                prePageItem.zIndex.value = 2;
 
                 nextPageItem.top.value = curPageItemTopValue;
                 nextPageItem.translationY.value = nextPageItem.statusDefaultTranslation;
                 nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslation;
+                nextPageItem.zIndex.value = 1;
               }
             }
           );
