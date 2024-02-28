@@ -29,10 +29,20 @@ export class PageItem {
   private _panGesture: PanGesture | null = null;
   private _scrollViewProps: Partial<any> | undefined = undefined;
   public readonly nestedScrollViewRef: RefObject<ScrollView>;
+  public readonly statusDefaultTranslation: number = 0; // 默认状态
+  public readonly statusHeaderTranslation: number = 52; // HEADER 加载中
+  public readonly statusFooterTranslation: number = -52; // FOOTER 加载中
+  public readonly statusPreTranslation: number = 0; // 上一页
+  public readonly statusNextTranslation: number = 0; // 下一页
 
   public constructor(
     name: string,
     height: number,
+    statusDefaultTranslation: number,
+    statusHeaderTranslation: number,
+    statusFooterTranslation: number,
+    statusPreTranslation: number,
+    statusNextTranslation: number,
     backgroundColor: string,
     preStatus: SharedValue<number>,
     top: SharedValue<number>,
@@ -62,6 +72,11 @@ export class PageItem {
     this.isCanPullingUpToDown = isCanPullingUpToDown;
     this.isCanPullingDownToUp = isCanPullingDownToUp;
     this.nestedScrollViewRef = nestedScrollViewRef;
+    this.statusDefaultTranslation = statusDefaultTranslation;
+    this.statusHeaderTranslation = statusHeaderTranslation;
+    this.statusFooterTranslation = statusFooterTranslation;
+    this.statusPreTranslation = statusPreTranslation;
+    this.statusNextTranslation = statusNextTranslation;
   }
 
   get scrollHandler(): ((event: NativeSyntheticEvent<NativeScrollEvent>) => void) | undefined {
@@ -219,19 +234,11 @@ export function useAnimatedStyleCustom(pageItem: PageItem) {
 }
 
 function usePanGestureCustom(pageItem: PageItem) {
-  const PAGE_ITEM_HEIGHT = pageItem.height;
-  const STATUS_CURRENT_PAGE = 0; // 默认状态
-  const STATUS_CURRENT_PAGE_HEADER_LOADING = 100; // header 加载中
-  const STATUS_CURRENT_PAGE_FOOTER_LOADING = -100; // footer 加载中
-  const STATUS_PRE_PAGE = -PAGE_ITEM_HEIGHT + 100; // 上一页
-  const STATUS_NEXT_PAGE = PAGE_ITEM_HEIGHT - 100; // 下一页
-  const preStatus = pageItem.preStatus;
-
   if (!pageItem.panGesture) {
     const simulateScroll = () => {
       pageItem.nestedScrollViewRef?.current?.scrollTo?.({
         x: undefined,
-        y: -pageItem.translationY.value + STATUS_CURRENT_PAGE,
+        y: -pageItem.translationY.value + pageItem.statusDefaultTranslation,
         animated: false,
       });
     };
@@ -244,26 +251,26 @@ function usePanGestureCustom(pageItem: PageItem) {
     const finishLoading = (isHeader: boolean, goToNextPage: boolean = true) => {
       if (goToNextPage) {
         if (isHeader) {
-          if (pageItem.translationY.value !== STATUS_NEXT_PAGE) {
-            pageItem.translationY.value = withTiming(STATUS_NEXT_PAGE, { duration: 200 });
+          if (pageItem.translationY.value !== pageItem.statusNextTranslation) {
+            pageItem.translationY.value = withTiming(pageItem.statusNextTranslation, { duration: 200 });
           }
-          if (preStatus.value !== STATUS_NEXT_PAGE) {
-            preStatus.value = STATUS_NEXT_PAGE;
+          if (pageItem.preStatus.value !== pageItem.statusNextTranslation) {
+            pageItem.preStatus.value = pageItem.statusNextTranslation;
           }
         } else {
-          if (pageItem.translationY.value !== STATUS_PRE_PAGE) {
-            pageItem.translationY.value = withTiming(STATUS_PRE_PAGE, { duration: 200 });
+          if (pageItem.translationY.value !== pageItem.statusPreTranslation) {
+            pageItem.translationY.value = withTiming(pageItem.statusPreTranslation, { duration: 200 });
           }
-          if (preStatus.value !== STATUS_PRE_PAGE) {
-            preStatus.value = STATUS_PRE_PAGE;
+          if (pageItem.preStatus.value !== pageItem.statusPreTranslation) {
+            pageItem.preStatus.value = pageItem.statusPreTranslation;
           }
         }
       } else {
-        if (pageItem.translationY.value !== STATUS_CURRENT_PAGE) {
-          pageItem.translationY.value = withTiming(STATUS_CURRENT_PAGE, { duration: 200 });
+        if (pageItem.translationY.value !== pageItem.statusDefaultTranslation) {
+          pageItem.translationY.value = withTiming(pageItem.statusDefaultTranslation, { duration: 200 });
         }
-        if (preStatus.value !== STATUS_CURRENT_PAGE) {
-          preStatus.value = STATUS_CURRENT_PAGE;
+        if (pageItem.preStatus.value !== pageItem.statusDefaultTranslation) {
+          pageItem.preStatus.value = pageItem.statusDefaultTranslation;
         }
       }
     };
@@ -277,19 +284,20 @@ function usePanGestureCustom(pageItem: PageItem) {
         // move sheet if top or scrollview or is closed state
         if (isPullingUpToDown && pageItem.scrollY.value === 0) {
           // current page changing translationY
-          pageItem.translationY.value = preStatus.value + e.translationY - pageItem.touchingOffset.value;
+          pageItem.translationY.value = pageItem.preStatus.value + e.translationY - pageItem.touchingOffset.value;
           // capture movement, but don't move sheet
         } else if (!isPullingUpToDown && pageItem.isCanPullingDownToUp.value) {
-          pageItem.translationY.value = preStatus.value + e.translationY - pageItem.touchingOffset.value;
-          // currentPageTranslationY.value = -currentPageTranslationY.value;
-          // currentPageTranslationY.value = e.translationY;
+          pageItem.translationY.value = pageItem.preStatus.value + e.translationY - pageItem.touchingOffset.value;
         } else {
           // current page child scrollview nested scroll
           pageItem.touchingOffset.value = e.translationY;
         }
 
         // simulate scroll if user continues touching screen
-        if (preStatus.value !== STATUS_CURRENT_PAGE && pageItem.scrollY.value < STATUS_CURRENT_PAGE) {
+        if (
+          pageItem.preStatus.value !== pageItem.statusDefaultTranslation &&
+          pageItem.scrollY.value < pageItem.statusDefaultTranslation
+        ) {
           runOnJS(simulateScroll)();
         }
       })
@@ -297,34 +305,26 @@ function usePanGestureCustom(pageItem: PageItem) {
         // default on worklet thread, https://github.com/software-mansion/react-native-gesture-handler/issues/2300
 
         // close sheet if velocity or travel is good
-        if (e.translationY >= STATUS_CURRENT_PAGE_HEADER_LOADING && pageItem.scrollY.value < 1) {
+        if (e.translationY >= pageItem.statusHeaderTranslation && pageItem.scrollY.value < 1) {
           pageItem.isEnabledGesture.value = false;
-          pageItem.translationY.value = withTiming(
-            STATUS_CURRENT_PAGE_HEADER_LOADING,
-            { duration: 200 },
-            (finished) => {
-              if (finished) {
-                runOnJS(handleLoading)(true);
-              }
+          pageItem.translationY.value = withTiming(pageItem.statusHeaderTranslation, { duration: 200 }, (finished) => {
+            if (finished) {
+              runOnJS(handleLoading)(true);
             }
-          );
-          preStatus.value = STATUS_CURRENT_PAGE_HEADER_LOADING;
+          });
+          pageItem.preStatus.value = pageItem.statusHeaderTranslation;
           // start header loading
-        } else if (e.translationY <= STATUS_CURRENT_PAGE_FOOTER_LOADING && pageItem.isCanPullingDownToUp.value) {
+        } else if (e.translationY <= pageItem.statusFooterTranslation && pageItem.isCanPullingDownToUp.value) {
           pageItem.isEnabledGesture.value = false;
-          pageItem.translationY.value = withTiming(
-            STATUS_CURRENT_PAGE_FOOTER_LOADING,
-            { duration: 200 },
-            (finished) => {
-              if (finished) {
-                runOnJS(handleLoading)(false);
-              }
+          pageItem.translationY.value = withTiming(pageItem.statusFooterTranslation, { duration: 200 }, (finished) => {
+            if (finished) {
+              runOnJS(handleLoading)(false);
             }
-          );
-          preStatus.value = STATUS_CURRENT_PAGE_HEADER_LOADING;
+          });
+          pageItem.preStatus.value = pageItem.statusHeaderTranslation;
           // start header loading
         } else {
-          pageItem.translationY.value = withTiming(preStatus.value, { duration: 200 });
+          pageItem.translationY.value = withTiming(pageItem.preStatus.value, { duration: 200 });
         }
       })
       .onFinalize((_e) => {
