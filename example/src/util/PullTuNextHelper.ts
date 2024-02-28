@@ -98,10 +98,7 @@ export class PullTuNextHelper {
 
   constructor(pageItemOriginArray: Array<PageItem>) {
     this.pageItemOriginArray = pageItemOriginArray.map((item) => {
-      return {
-        ...item,
-        // translationY: { value: item.translationY.value },
-      };
+      return { ...item };
     }) as Array<PageItem>;
     this.pageItemArray = [...pageItemOriginArray];
   }
@@ -168,7 +165,7 @@ export class PullTuNextHelper {
   };
   //endregion
 
-  public restore = () => {
+  public reset = () => {
     this.pageItemArray = this.pageItemOriginArray.map((pageItem) => {
       pageItem.preStatus.value = 0;
       pageItem.translationY.value = 0;
@@ -178,9 +175,7 @@ export class PullTuNextHelper {
       pageItem.touchingOffset.value = 0;
       pageItem.scrollY.value = 0;
       pageItem.nestedScrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: true });
-      return {
-        ...pageItem,
-      } as PageItem;
+      return { ...pageItem } as PageItem;
     });
   };
 }
@@ -206,9 +201,6 @@ function useAnimatedPropsCustom(pageItem: PageItem) {
   });
 }
 
-/**
- * Error: Trying to convert a cyclic object to a shareable. This is not supported.
- */
 export function useAnimatedStyleCustom(pageItem: PageItem) {
   return useAnimatedStyle(() => {
     // const isPullingUpToDown = pageItem.translationY.value >= 0;
@@ -217,7 +209,7 @@ export function useAnimatedStyleCustom(pageItem: PageItem) {
   });
 }
 
-export function usePanGesture(pageItem: PageItem) {
+function usePanGestureCustom(pageItem: PageItem) {
   const PAGE_ITEM_HEIGHT = pageItem.height;
   const STATUS_CURRENT_PAGE = 0; // 默认状态
   const STATUS_CURRENT_PAGE_HEADER_LOADING = 100; // header 加载中
@@ -338,20 +330,21 @@ export function usePanGesture(pageItem: PageItem) {
 
 export default function usePullToNextHelperRef(originPullToNextHelper: PullTuNextHelper) {
   const pullToNextHelperRef = useRef<PullTuNextHelper>(originPullToNextHelper);
-
   const pullToNextHelper = pullToNextHelperRef.current;
+
   const prePageItemOrigin = pullToNextHelper.getPrePageItemOrigin();
   const curPageItemOrigin = pullToNextHelper.getCurPageItemOrigin();
   const nextPageItemOrigin = pullToNextHelper.getNextPageItemOrigin();
+
   useAnimatedScrollHandlerCustom(prePageItemOrigin);
   useAnimatedScrollHandlerCustom(curPageItemOrigin);
   useAnimatedScrollHandlerCustom(nextPageItemOrigin);
   useAnimatedPropsCustom(prePageItemOrigin);
   useAnimatedPropsCustom(curPageItemOrigin);
   useAnimatedPropsCustom(nextPageItemOrigin);
-  usePanGesture(prePageItemOrigin);
-  usePanGesture(curPageItemOrigin);
-  usePanGesture(nextPageItemOrigin);
+  usePanGestureCustom(prePageItemOrigin);
+  usePanGestureCustom(curPageItemOrigin);
+  usePanGestureCustom(nextPageItemOrigin);
 
   return pullToNextHelperRef;
 }
