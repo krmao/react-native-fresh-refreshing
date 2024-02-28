@@ -222,7 +222,7 @@ export class PullToNextHelper {
       }, duration);
     };
 
-    if (goToNext) {
+    if (!goToNext) {
       if (pageItem.preStatus.value !== pageItem.statusNextTranslationY) {
         pageItem.preStatus.value = pageItem.statusNextTranslationY;
       }
@@ -428,7 +428,7 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
           { duration: pageItem.animatedDurationForGoToLoading },
           (finished) => {
             if (finished) {
-              runOnJS(handleLoading)(true);
+              runOnJS(handleLoading)(false);
             }
           }
         );
@@ -441,7 +441,7 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
           { duration: pageItem.animatedDurationForGoToLoading },
           (finished) => {
             if (finished) {
-              runOnJS(handleLoading)(false);
+              runOnJS(handleLoading)(true);
             }
           }
         );

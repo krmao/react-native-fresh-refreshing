@@ -187,8 +187,9 @@ function App() {
   useEffect(() => {
     setTimeout(() => {
       pullTuNextHelperRef.current.goToPreOrNext();
-    }, 1000);
-  }, [pullTuNextHelperRef]);
+    }, 2000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View
