@@ -35,6 +35,11 @@ function App() {
   const originPreNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originCurNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originNextNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
+
+  const defaultPreTop = 0;
+  const defaultCurTop = PAGE_ITEM_HEIGHT;
+  const defaultNextTop = PAGE_ITEM_HEIGHT + PAGE_ITEM_HEIGHT;
+
   const pullTuNextHelperRef = usePullToNextHelperRef(
     new PullToNextHelper([
       new PageItem(
@@ -47,7 +52,10 @@ function App() {
         PAGE_ITEM_HEIGHT,
         'red',
         useSharedValue(0),
-        useSharedValue(0),
+        useSharedValue(defaultPreTop),
+        defaultPreTop,
+        defaultCurTop,
+        defaultNextTop,
         useSharedValue(3),
         useSharedValue(0),
         useSharedValue(false),
@@ -69,7 +77,10 @@ function App() {
         PAGE_ITEM_HEIGHT,
         'green',
         useSharedValue(0),
-        useSharedValue(PAGE_ITEM_HEIGHT),
+        useSharedValue(defaultCurTop),
+        defaultPreTop,
+        defaultCurTop,
+        defaultNextTop,
         useSharedValue(2),
         useSharedValue(0),
         useSharedValue(false),
@@ -91,7 +102,10 @@ function App() {
         PAGE_ITEM_HEIGHT,
         'blue',
         useSharedValue(0),
-        useSharedValue(PAGE_ITEM_HEIGHT + PAGE_ITEM_HEIGHT),
+        useSharedValue(defaultNextTop),
+        defaultPreTop,
+        defaultCurTop,
+        defaultNextTop,
         useSharedValue(3),
         useSharedValue(0),
         useSharedValue(false),

@@ -1,6 +1,7 @@
-import { RefObject, useRef } from 'react';
+import React, { RefObject, useRef } from 'react';
 import { Gesture, PanGesture, ScrollView } from 'react-native-gesture-handler';
 import {
+  AnimatableValue,
   runOnJS,
   SharedValue,
   useAnimatedProps,
@@ -16,6 +17,9 @@ export class PageItem {
   public readonly backgroundColor: string;
   public readonly preStatus: SharedValue<number>;
   public readonly top: SharedValue<number>;
+  public readonly defaultPreTop: number;
+  public readonly defaultCurTop: number;
+  public readonly defaultNextTop: number;
   public readonly zIndex: SharedValue<number>;
   public readonly translationY: SharedValue<number>;
   public readonly isTouching: SharedValue<boolean>;
@@ -34,8 +38,6 @@ export class PageItem {
   public readonly statusFooterTranslation: number = -52; // FOOTER 加载中
   public readonly statusPreTranslation: number = 0; // 上一页
   public readonly statusNextTranslation: number = 0; // 下一页
-  private _prePageItem: PageItem | null = null;
-  private _nextPageItem: PageItem | null = null;
 
   public constructor(
     name: string,
@@ -48,6 +50,9 @@ export class PageItem {
     backgroundColor: string,
     preStatus: SharedValue<number>,
     top: SharedValue<number>,
+    defaultPreTop: number,
+    defaultCurTop: number,
+    defaultNextTop: number,
     zIndex: SharedValue<number>,
     translationY: SharedValue<number>,
     isTouching: SharedValue<boolean>,
@@ -64,6 +69,9 @@ export class PageItem {
     this.backgroundColor = backgroundColor;
     this.preStatus = preStatus;
     this.top = top;
+    this.defaultPreTop = defaultPreTop;
+    this.defaultCurTop = defaultCurTop;
+    this.defaultNextTop = defaultNextTop;
     this.zIndex = zIndex;
     this.translationY = translationY;
     this.isTouching = isTouching;
@@ -91,22 +99,6 @@ export class PageItem {
 
   get scrollViewProps(): Partial<any> | undefined {
     return this._scrollViewProps;
-  }
-
-  get prePageItem(): PageItem | null {
-    return this._prePageItem;
-  }
-
-  get nextPageItem(): PageItem | null {
-    return this._nextPageItem;
-  }
-
-  set prePageItem(prePageItem: PageItem) {
-    this._prePageItem = prePageItem;
-  }
-
-  set nextPageItem(nextPageItem: PageItem) {
-    this._nextPageItem = nextPageItem;
   }
 
   set scrollHandler(scrollHandler: (event: NativeSyntheticEvent<NativeScrollEvent>) => void) {
@@ -149,63 +141,30 @@ export class PullToNextHelper {
   public getPrePageItemOrigin = (): PageItem => this.pageItemOriginArray[0] as PageItem;
   public getCurPageItemOrigin = (): PageItem => this.pageItemOriginArray[1] as PageItem;
   public getNextPageItemOrigin = (): PageItem => this.pageItemOriginArray[2] as PageItem;
-
-  public getPrePageItemOriginNestedScrollViewRef = (): RefObject<ScrollView> => {
-    return this.getPrePageItemOrigin().nestedScrollViewRef;
-  };
-  public getCurPageItemOriginNestedScrollViewRef = (): RefObject<ScrollView> => {
-    return this.getCurPageItemOrigin().nestedScrollViewRef;
-  };
-  public getNextPageItemOriginNestedScrollViewRef = (): RefObject<ScrollView> => {
-    return this.getNextPageItemOrigin().nestedScrollViewRef;
-  };
   //endregion
 
-  //region 当前最新的
-  public getPrePageItem = (): PageItem => this.pageItemArray[0] as PageItem;
-  public getCurPageItem = (): PageItem => this.pageItemArray[1] as PageItem;
-  public getNextPageItem = (): PageItem => this.pageItemArray[2] as PageItem;
-  public moveToPreItem = (callback?: () => void) => {
-    let lastPageItem = this.pageItemArray.pop() as PageItem;
-    this.pageItemArray.unshift(lastPageItem);
-    callback?.();
+  public getPreAndNextPageItems = (curPageItem: PageItem): { prePageItem: PageItem; nextPageItem: PageItem } => {
+    let prePageItem = this.getPrePageItemOrigin();
+    let nextPageItem = this.getNextPageItemOrigin();
+    switch (curPageItem.name) {
+      case 'A': {
+        prePageItem = this.getNextPageItemOrigin();
+        nextPageItem = this.getCurPageItemOrigin();
+        break;
+      }
+      case 'B': {
+        prePageItem = this.getPrePageItemOrigin();
+        nextPageItem = this.getNextPageItemOrigin();
+        break;
+      }
+      case 'C': {
+        prePageItem = this.getCurPageItemOrigin();
+        nextPageItem = this.getPrePageItemOrigin();
+        break;
+      }
+    }
+    return { prePageItem: prePageItem, nextPageItem: nextPageItem };
   };
-  public moveToNextItem = (callback?: () => void) => {
-    let prePageItem = this.pageItemArray.shift() as PageItem;
-    this.pageItemArray.push(prePageItem);
-    callback?.();
-  };
-
-  public getPrePageItemTranslationY = (): SharedValue<number> => {
-    return this.getPrePageItem().translationY;
-  };
-  public getCurPageItemTranslationY = (): SharedValue<number> => {
-    return this.getCurPageItem().translationY;
-  };
-  public getNextPageItemTranslationY = (): SharedValue<number> => {
-    return this.getNextPageItem().translationY;
-  };
-
-  public getPrePageItemIsTouching = (): SharedValue<boolean> => {
-    return this.getPrePageItem().isTouching;
-  };
-  public getCurPageItemIsTouching = (): SharedValue<boolean> => {
-    return this.getCurPageItem().isTouching;
-  };
-  public getNextPageItemIsTouching = (): SharedValue<boolean> => {
-    return this.getNextPageItem().isTouching;
-  };
-
-  public getPrePageItemIsEnabledGesture = (): SharedValue<boolean> => {
-    return this.getPrePageItem().isEnabledGesture;
-  };
-  public getCurPageItemIsEnabledGesture = (): SharedValue<boolean> => {
-    return this.getCurPageItem().isEnabledGesture;
-  };
-  public getNextPageItemIsEnabledGesture = (): SharedValue<boolean> => {
-    return this.getNextPageItem().isEnabledGesture;
-  };
-  //endregion
 
   public reset = () => {
     this.pageItemArray = this.pageItemOriginArray.map((pageItem) => {
@@ -251,112 +210,135 @@ export function useAnimatedStyleCustom(pageItem: PageItem) {
   });
 }
 
-function usePanGestureCustom(pageItem: PageItem) {
-  if (!pageItem.panGesture) {
-    const simulateScroll = () => {
-      pageItem.nestedScrollViewRef?.current?.scrollTo?.({
-        x: undefined,
-        y: -pageItem.translationY.value + pageItem.statusDefaultTranslation,
-        animated: false,
-      });
-    };
-    const handleLoading = (isHeader: boolean) => {
-      setTimeout(() => {
-        finishLoading(isHeader);
-        pageItem.isEnabledGesture.value = true;
-      }, 1500);
-    };
-    const finishLoading = (isHeader: boolean, goToNextPage: boolean = true) => {
-      if (goToNextPage) {
-        if (isHeader) {
-          if (pageItem.translationY.value !== pageItem.statusNextTranslation) {
-            pageItem.translationY.value = withTiming(pageItem.statusNextTranslation, { duration: 200 });
-            (pageItem.prePageItem as PageItem).translationY.value = withTiming(pageItem.statusNextTranslation, {
-              duration: 200,
-            });
-          }
-          if (pageItem.preStatus.value !== pageItem.statusNextTranslation) {
-            pageItem.preStatus.value = pageItem.statusNextTranslation;
-            (pageItem.prePageItem as PageItem).preStatus.value = pageItem.statusNextTranslation;
-          }
-        } else {
-          if (pageItem.translationY.value !== pageItem.statusPreTranslation) {
-            pageItem.translationY.value = withTiming(pageItem.statusPreTranslation, { duration: 200 });
-          }
-          if (pageItem.preStatus.value !== pageItem.statusPreTranslation) {
-            pageItem.preStatus.value = pageItem.statusPreTranslation;
-          }
+function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.MutableRefObject<PullToNextHelper>) {
+  if (pageItem.panGesture) {
+    return;
+  }
+
+  const pullToNextHelper = pullToNextHelperRef.current;
+  const { prePageItem, nextPageItem } = pullToNextHelper.getPreAndNextPageItems(pageItem);
+
+  const simulateScroll = () => {
+    pageItem.nestedScrollViewRef?.current?.scrollTo?.({
+      x: undefined,
+      y: -pageItem.translationY.value + pageItem.statusDefaultTranslation,
+      animated: false,
+    });
+  };
+  const handleLoading = (isHeader: boolean) => {
+    setTimeout(() => {
+      finishLoading(isHeader);
+      pageItem.isEnabledGesture.value = true;
+    }, 1500);
+  };
+  const finishLoading = (isHeader: boolean, goToNextPage: boolean = true) => {
+    if (goToNextPage) {
+      if (isHeader) {
+        if (pageItem.preStatus.value !== pageItem.statusNextTranslation) {
+          pageItem.preStatus.value = pageItem.statusNextTranslation;
+        }
+        if (pageItem.translationY.value !== pageItem.statusNextTranslation) {
+          pageItem.translationY.value = withTiming(pageItem.statusNextTranslation, { duration: 200 });
+          prePageItem.translationY.value = withTiming(
+            prePageItem.statusNextTranslation,
+            { duration: 200 },
+            (finished?: boolean, _current?: AnimatableValue) => {
+              if (finished) {
+                const curPageItemTopValue = pageItem.top.value;
+                pageItem.top.value = nextPageItem.top.value;
+                pageItem.translationY.value = pageItem.statusDefaultTranslation;
+                pageItem.preStatus.value = pageItem.statusDefaultTranslation;
+
+                nextPageItem.top.value = prePageItem.top.value;
+                nextPageItem.translationY.value = nextPageItem.statusDefaultTranslation;
+                nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslation;
+
+                prePageItem.top.value = curPageItemTopValue;
+                prePageItem.translationY.value = prePageItem.statusDefaultTranslation;
+                prePageItem.preStatus.value = prePageItem.statusDefaultTranslation;
+              }
+            }
+          );
         }
       } else {
-        if (pageItem.translationY.value !== pageItem.statusDefaultTranslation) {
-          pageItem.translationY.value = withTiming(pageItem.statusDefaultTranslation, { duration: 200 });
+        if (pageItem.translationY.value !== pageItem.statusPreTranslation) {
+          pageItem.translationY.value = withTiming(pageItem.statusPreTranslation, { duration: 200 });
+          nextPageItem.translationY.value = withTiming(pageItem.statusPreTranslation, { duration: 200 });
         }
-        if (pageItem.preStatus.value !== pageItem.statusDefaultTranslation) {
-          pageItem.preStatus.value = pageItem.statusDefaultTranslation;
+        if (pageItem.preStatus.value !== pageItem.statusPreTranslation) {
+          pageItem.preStatus.value = pageItem.statusPreTranslation;
+          nextPageItem.preStatus.value = pageItem.statusPreTranslation;
         }
       }
-    };
-    pageItem.panGesture = Gesture.Pan()
-      .onBegin((e) => {
-        pageItem.lastY.value = e.y;
-        pageItem.isTouching.value = true;
-      })
-      .onUpdate((e) => {
-        const isPullingUpToDown = e.y - pageItem.lastY.value > 0;
-        // move sheet if top or scrollview or is closed state
-        if (isPullingUpToDown && pageItem.scrollY.value === 0) {
-          // current page changing translationY
-          pageItem.translationY.value = pageItem.preStatus.value + e.translationY - pageItem.touchingOffset.value;
-          // capture movement, but don't move sheet
-        } else if (!isPullingUpToDown && pageItem.isCanPullingDownToUp.value) {
-          pageItem.translationY.value = pageItem.preStatus.value + e.translationY - pageItem.touchingOffset.value;
-        } else {
-          // current page child scrollview nested scroll
-          pageItem.touchingOffset.value = e.translationY;
-        }
+    } else {
+      if (pageItem.translationY.value !== pageItem.statusDefaultTranslation) {
+        pageItem.translationY.value = withTiming(pageItem.statusDefaultTranslation, { duration: 200 });
+      }
+      if (pageItem.preStatus.value !== pageItem.statusDefaultTranslation) {
+        pageItem.preStatus.value = pageItem.statusDefaultTranslation;
+      }
+    }
+  };
+  pageItem.panGesture = Gesture.Pan()
+    .onBegin((e) => {
+      pageItem.lastY.value = e.y;
+      pageItem.isTouching.value = true;
+    })
+    .onUpdate((e) => {
+      const isPullingUpToDown = e.y - pageItem.lastY.value > 0;
+      // move sheet if top or scrollview or is closed state
+      if (isPullingUpToDown && pageItem.scrollY.value === 0) {
+        // current page changing translationY
+        pageItem.translationY.value = pageItem.preStatus.value + e.translationY - pageItem.touchingOffset.value;
+        // capture movement, but don't move sheet
+      } else if (!isPullingUpToDown && pageItem.isCanPullingDownToUp.value) {
+        pageItem.translationY.value = pageItem.preStatus.value + e.translationY - pageItem.touchingOffset.value;
+      } else {
+        // current page child scrollview nested scroll
+        pageItem.touchingOffset.value = e.translationY;
+      }
 
-        // simulate scroll if user continues touching screen
-        if (
-          pageItem.preStatus.value !== pageItem.statusDefaultTranslation &&
-          pageItem.scrollY.value < pageItem.statusDefaultTranslation
-        ) {
-          runOnJS(simulateScroll)();
-        }
-      })
-      .onEnd((e) => {
-        // default on worklet thread, https://github.com/software-mansion/react-native-gesture-handler/issues/2300
+      // simulate scroll if user continues touching screen
+      if (
+        pageItem.preStatus.value !== pageItem.statusDefaultTranslation &&
+        pageItem.scrollY.value < pageItem.statusDefaultTranslation
+      ) {
+        runOnJS(simulateScroll)();
+      }
+    })
+    .onEnd((e) => {
+      // default on worklet thread, https://github.com/software-mansion/react-native-gesture-handler/issues/2300
 
-        // close sheet if velocity or travel is good
-        if (e.translationY >= pageItem.statusHeaderTranslation && pageItem.scrollY.value < 1) {
-          pageItem.isEnabledGesture.value = false;
-          pageItem.translationY.value = withTiming(pageItem.statusHeaderTranslation, { duration: 200 }, (finished) => {
-            if (finished) {
-              runOnJS(handleLoading)(true);
-            }
-          });
-          pageItem.preStatus.value = pageItem.statusHeaderTranslation;
-          // start header loading
-        } else if (e.translationY <= pageItem.statusFooterTranslation && pageItem.isCanPullingDownToUp.value) {
-          pageItem.isEnabledGesture.value = false;
-          pageItem.translationY.value = withTiming(pageItem.statusFooterTranslation, { duration: 200 }, (finished) => {
-            if (finished) {
-              runOnJS(handleLoading)(false);
-            }
-          });
-          pageItem.preStatus.value = pageItem.statusHeaderTranslation;
-          // start header loading
-        } else {
-          pageItem.translationY.value = withTiming(pageItem.preStatus.value, { duration: 200 });
-        }
-      })
-      .onFinalize((_e) => {
-        // stopped touching screen
-        pageItem.isTouching.value = false;
-        pageItem.touchingOffset.value = 0;
-      })
-      .simultaneousWithExternalGesture(pageItem.nestedScrollViewRef)
-      .runOnJS(false);
-  }
+      // close sheet if velocity or travel is good
+      if (e.translationY >= pageItem.statusHeaderTranslation && pageItem.scrollY.value < 1) {
+        pageItem.isEnabledGesture.value = false;
+        pageItem.translationY.value = withTiming(pageItem.statusHeaderTranslation, { duration: 200 }, (finished) => {
+          if (finished) {
+            runOnJS(handleLoading)(true);
+          }
+        });
+        pageItem.preStatus.value = pageItem.statusHeaderTranslation;
+        // start header loading
+      } else if (e.translationY <= pageItem.statusFooterTranslation && pageItem.isCanPullingDownToUp.value) {
+        pageItem.isEnabledGesture.value = false;
+        pageItem.translationY.value = withTiming(pageItem.statusFooterTranslation, { duration: 200 }, (finished) => {
+          if (finished) {
+            runOnJS(handleLoading)(false);
+          }
+        });
+        pageItem.preStatus.value = pageItem.statusHeaderTranslation;
+        // start header loading
+      } else {
+        pageItem.translationY.value = withTiming(pageItem.preStatus.value, { duration: 200 });
+      }
+    })
+    .onFinalize((_e) => {
+      // stopped touching screen
+      pageItem.isTouching.value = false;
+      pageItem.touchingOffset.value = 0;
+    })
+    .simultaneousWithExternalGesture(pageItem.nestedScrollViewRef)
+    .runOnJS(false);
 }
 
 export default function usePullToNextHelperRef(originPullToNextHelper: PullToNextHelper) {
@@ -367,25 +349,15 @@ export default function usePullToNextHelperRef(originPullToNextHelper: PullToNex
   const curPageItemOrigin = pullToNextHelper.getCurPageItemOrigin();
   const nextPageItemOrigin = pullToNextHelper.getNextPageItemOrigin();
 
-  // TODO 循环引用
-  // prePageItemOrigin.prePageItem = nextPageItemOrigin;
-  // prePageItemOrigin.nextPageItem = curPageItemOrigin;
-  // //
-  // curPageItemOrigin.prePageItem = prePageItemOrigin;
-  // curPageItemOrigin.nextPageItem = nextPageItemOrigin;
-  // //
-  // nextPageItemOrigin.prePageItem = curPageItemOrigin;
-  // nextPageItemOrigin.nextPageItem = prePageItemOrigin;
-
   useAnimatedScrollHandlerCustom(prePageItemOrigin);
   useAnimatedScrollHandlerCustom(curPageItemOrigin);
   useAnimatedScrollHandlerCustom(nextPageItemOrigin);
   useAnimatedPropsCustom(prePageItemOrigin);
   useAnimatedPropsCustom(curPageItemOrigin);
   useAnimatedPropsCustom(nextPageItemOrigin);
-  usePanGestureCustom(prePageItemOrigin);
-  usePanGestureCustom(curPageItemOrigin);
-  usePanGestureCustom(nextPageItemOrigin);
+  usePanGestureCustom(prePageItemOrigin, pullToNextHelperRef);
+  usePanGestureCustom(curPageItemOrigin, pullToNextHelperRef);
+  usePanGestureCustom(nextPageItemOrigin, pullToNextHelperRef);
 
   return pullToNextHelperRef;
 }
