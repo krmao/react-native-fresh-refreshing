@@ -101,7 +101,7 @@ export class PageItem {
 }
 
 // noinspection JSUnusedGlobalSymbols
-export class PullTuNextHelper {
+export class PullToNextHelper {
   public pageItemArray: Array<PageItem>;
   public readonly pageItemOriginArray: Array<PageItem>;
 
@@ -214,9 +214,7 @@ export function useAnimatedStyleCustom(pageItem: PageItem) {
   return useAnimatedStyle(() => {
     // const isPullingUpToDown = pageItem.translationY.value >= 0;
     // const isPullingDownToUp = pageItem.translationY.value < 0;
-    return {
-      transform: [{ translateY: pageItem.translationY.value }],
-    };
+    return { transform: [{ translateY: pageItem.translationY.value }] };
   });
 }
 
@@ -339,8 +337,8 @@ function usePanGestureCustom(pageItem: PageItem) {
   }
 }
 
-export default function usePullToNextHelperRef(originPullToNextHelper: PullTuNextHelper) {
-  const pullToNextHelperRef = useRef<PullTuNextHelper>(originPullToNextHelper);
+export default function usePullToNextHelperRef(originPullToNextHelper: PullToNextHelper) {
+  const pullToNextHelperRef = useRef<PullToNextHelper>(originPullToNextHelper);
   const pullToNextHelper = pullToNextHelperRef.current;
 
   const prePageItemOrigin = pullToNextHelper.getPrePageItemOrigin();

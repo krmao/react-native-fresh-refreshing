@@ -21,7 +21,7 @@ import {
 import Animated, { AnimateProps, useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { NativeViewGestureHandlerProps } from 'react-native-gesture-handler/src/handlers/NativeViewGestureHandler';
 import { Footer, Header, ScrollViewContent } from './util/PullToNextComponents';
-import usePullToNextHelperRef, { PageItem, PullTuNextHelper, useAnimatedStyleCustom } from './util/PullTuNextHelper';
+import usePullToNextHelperRef, { PageItem, PullToNextHelper, useAnimatedStyleCustom } from './util/PullToNextHelper';
 
 // https://github.com/software-mansion/react-native-gesture-handler/issues/420#issuecomment-1356861934
 // https://snack.expo.dev/@himanshu266/bottom-sheet-scrollview
@@ -36,7 +36,7 @@ function App() {
   const originCurNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originNextNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const pullTuNextHelperRef = usePullToNextHelperRef(
-    new PullTuNextHelper([
+    new PullToNextHelper([
       new PageItem(
         'A',
         PAGE_ITEM_HEIGHT,
