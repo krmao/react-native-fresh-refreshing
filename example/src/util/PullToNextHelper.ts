@@ -17,9 +17,6 @@ export class PageItem {
   public readonly backgroundColor: string;
   public readonly preStatus: SharedValue<number>;
   public readonly top: SharedValue<number>;
-  public readonly defaultPreTop: number;
-  public readonly defaultCurTop: number;
-  public readonly defaultNextTop: number;
   public readonly zIndex: SharedValue<number>;
   public readonly translationY: SharedValue<number>;
   public readonly isTouching: SharedValue<boolean>;
@@ -50,9 +47,6 @@ export class PageItem {
     backgroundColor: string,
     preStatus: SharedValue<number>,
     top: SharedValue<number>,
-    defaultPreTop: number,
-    defaultCurTop: number,
-    defaultNextTop: number,
     zIndex: SharedValue<number>,
     translationY: SharedValue<number>,
     isTouching: SharedValue<boolean>,
@@ -69,9 +63,6 @@ export class PageItem {
     this.backgroundColor = backgroundColor;
     this.preStatus = preStatus;
     this.top = top;
-    this.defaultPreTop = defaultPreTop;
-    this.defaultCurTop = defaultCurTop;
-    this.defaultNextTop = defaultNextTop;
     this.zIndex = zIndex;
     this.translationY = translationY;
     this.isTouching = isTouching;
