@@ -13,7 +13,7 @@ import {
 import { NativeScrollEvent, NativeSyntheticEvent, ViewProps } from 'react-native';
 
 export class PageItem {
-  public readonly name: string;
+  public readonly name: 'A' | 'B' | 'C';
   public readonly height: number;
   public readonly backgroundColor: string;
   public readonly preStatus: SharedValue<number>;
@@ -40,9 +40,11 @@ export class PageItem {
   public readonly animatedDurationForGoToDefault: number = 300;
   public readonly animatedDurationForGoToLoading: number = 300;
   public readonly animatedDurationForGoToPreOrNext: number = 500;
+  public isShowingCenterNow: boolean;
 
   public constructor(
-    name: string,
+    name: 'A' | 'B' | 'C',
+    isShowingCenterNow: boolean,
     height: number,
     statusDefaultTranslationY: number,
     statusHeaderTranslationY: number,
@@ -64,6 +66,7 @@ export class PageItem {
     nestedScrollViewRef: RefObject<ScrollView>
   ) {
     this.name = name;
+    this.isShowingCenterNow = isShowingCenterNow;
     this.height = height;
     this.backgroundColor = backgroundColor;
     this.preStatus = preStatus;
@@ -138,28 +141,145 @@ export class PullToNextHelper {
   }
 
   //region 最初原始的
-  public getPrePageItemOrigin = (): PageItem => this.pageItemOriginArray[0] as PageItem;
-  public getCurPageItemOrigin = (): PageItem => this.pageItemOriginArray[1] as PageItem;
-  public getNextPageItemOrigin = (): PageItem => this.pageItemOriginArray[2] as PageItem;
+  public getAPageItem = (): PageItem => this.pageItemOriginArray[0] as PageItem;
+  public getBPageItem = (): PageItem => this.pageItemOriginArray[1] as PageItem;
+  public getCPageItem = (): PageItem => this.pageItemOriginArray[2] as PageItem;
   //endregion
 
+  public getShowingCenterNowPageItem = (): PageItem => {
+    return this.pageItemOriginArray.find((pageItem) => pageItem.isShowingCenterNow) as PageItem;
+  };
+
+  public goToPreOrNext = (goToNext = true, currentShowingCenterNowPageItem = this.getShowingCenterNowPageItem()) => {
+    const pageItem = currentShowingCenterNowPageItem;
+    const { prePageItem, nextPageItem } = this.getPreAndNextPageItems(pageItem);
+
+    /**
+     * 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
+     */
+    const updateStatusAfterGoToNext = (
+      duration: number
+      // prePageItem: PageItem,
+      // pageItem: PageItem,
+      // nextPageItem: PageItem
+    ) => {
+      setTimeout(() => {
+        const curPageItemTopValue = pageItem.top.value;
+        pageItem.top.value = nextPageItem.top.value;
+        pageItem.translationY.value = pageItem.statusDefaultTranslationY;
+        pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
+        pageItem.zIndex.value = 2;
+        pageItem.isShowingCenterNow = false;
+        pageItem.lastY.value = 0;
+
+        nextPageItem.top.value = prePageItem.top.value;
+        nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
+        nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslationY;
+        nextPageItem.zIndex.value = 2;
+        nextPageItem.isShowingCenterNow = false;
+        nextPageItem.lastY.value = 0;
+
+        prePageItem.top.value = curPageItemTopValue;
+        prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
+        prePageItem.preStatus.value = prePageItem.statusDefaultTranslationY;
+        prePageItem.zIndex.value = 1;
+        prePageItem.isShowingCenterNow = true;
+        prePageItem.lastY.value = 0;
+      }, duration);
+    };
+
+    /**
+     * 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
+     */
+    const updateStatusAfterGoToPre = (
+      duration: number
+      // prePageItem: PageItem,
+      // pageItem: PageItem,
+      // nextPageItem: PageItem
+    ) => {
+      setTimeout(() => {
+        const curPageItemTopValue = pageItem.top.value;
+        pageItem.top.value = prePageItem.top.value;
+        pageItem.translationY.value = pageItem.statusDefaultTranslationY;
+        pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
+        pageItem.zIndex.value = 2;
+        pageItem.isShowingCenterNow = false;
+        pageItem.lastY.value = 0;
+
+        prePageItem.top.value = nextPageItem.top.value;
+        prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
+        prePageItem.preStatus.value = prePageItem.statusDefaultTranslationY;
+        prePageItem.zIndex.value = 2;
+        prePageItem.isShowingCenterNow = false;
+        prePageItem.lastY.value = 0;
+
+        nextPageItem.top.value = curPageItemTopValue;
+        nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
+        nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslationY;
+        nextPageItem.zIndex.value = 1;
+        nextPageItem.isShowingCenterNow = true;
+        nextPageItem.lastY.value = 0;
+      }, duration);
+    };
+
+    if (goToNext) {
+      if (pageItem.preStatus.value !== pageItem.statusNextTranslationY) {
+        pageItem.preStatus.value = pageItem.statusNextTranslationY;
+      }
+      if (pageItem.translationY.value !== pageItem.statusNextTranslationY) {
+        pageItem.translationY.value = withTiming(pageItem.statusNextTranslationY, {
+          duration: pageItem.animatedDurationForGoToPreOrNext,
+        });
+        prePageItem.translationY.value = withTiming(
+          prePageItem.statusNextTranslationY,
+          { duration: prePageItem.animatedDurationForGoToPreOrNext },
+          (finished?: boolean, _current?: AnimatableValue) => {
+            if (finished) {
+              // 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
+              runOnJS(updateStatusAfterGoToNext)(0 /*, prePageItem, pageItem, nextPageItem*/);
+            }
+          }
+        );
+      }
+    } else {
+      if (pageItem.preStatus.value !== pageItem.statusPreTranslationY) {
+        pageItem.preStatus.value = pageItem.statusPreTranslationY;
+      }
+      if (pageItem.translationY.value !== pageItem.statusPreTranslationY) {
+        pageItem.translationY.value = withTiming(pageItem.statusPreTranslationY, {
+          duration: pageItem.animatedDurationForGoToPreOrNext,
+        });
+        nextPageItem.translationY.value = withTiming(
+          nextPageItem.statusPreTranslationY,
+          { duration: nextPageItem.animatedDurationForGoToPreOrNext },
+          (finished?: boolean, _current?: AnimatableValue) => {
+            if (finished) {
+              // 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
+              runOnJS(updateStatusAfterGoToPre)(0 /*, prePageItem, pageItem, nextPageItem*/);
+            }
+          }
+        );
+      }
+    }
+  };
+
   public getPreAndNextPageItems = (curPageItem: PageItem): { prePageItem: PageItem; nextPageItem: PageItem } => {
-    let prePageItem = this.getPrePageItemOrigin();
-    let nextPageItem = this.getNextPageItemOrigin();
+    let prePageItem = this.getAPageItem();
+    let nextPageItem = this.getCPageItem();
     switch (curPageItem.name) {
       case 'A': {
-        prePageItem = this.getNextPageItemOrigin();
-        nextPageItem = this.getCurPageItemOrigin();
+        prePageItem = this.getCPageItem();
+        nextPageItem = this.getBPageItem();
         break;
       }
       case 'B': {
-        prePageItem = this.getPrePageItemOrigin();
-        nextPageItem = this.getNextPageItemOrigin();
+        prePageItem = this.getAPageItem();
+        nextPageItem = this.getCPageItem();
         break;
       }
       case 'C': {
-        prePageItem = this.getCurPageItemOrigin();
-        nextPageItem = this.getPrePageItemOrigin();
+        prePageItem = this.getBPageItem();
+        nextPageItem = this.getAPageItem();
         break;
       }
     }
@@ -240,7 +360,7 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
   }
 
   const pullToNextHelper = pullToNextHelperRef.current;
-  const { prePageItem, nextPageItem } = pullToNextHelper.getPreAndNextPageItems(pageItem);
+  // const { prePageItem, nextPageItem } = pullToNextHelper.getPreAndNextPageItems(pageItem);
 
   const simulateScroll = () => {
     pageItem.nestedScrollViewRef?.current?.scrollTo?.({
@@ -249,93 +369,16 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
       animated: false,
     });
   };
-  const handleLoading = (isHeader: boolean) => {
+  const handleLoading = (goToNext: boolean) => {
     setTimeout(() => {
-      finishLoading(isHeader);
+      finishLoading(goToNext);
       pageItem.isEnabledGesture.value = true;
     }, 1500);
   };
-  const updateStatusAfterGoToNext = (duration: number) => {
-    setTimeout(() => {
-      const curPageItemTopValue = pageItem.top.value;
-      pageItem.top.value = nextPageItem.top.value;
-      pageItem.translationY.value = pageItem.statusDefaultTranslationY;
-      pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
-      pageItem.zIndex.value = 2;
 
-      nextPageItem.top.value = prePageItem.top.value;
-      nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
-      nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslationY;
-      nextPageItem.zIndex.value = 2;
-
-      prePageItem.top.value = curPageItemTopValue;
-      prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
-      prePageItem.preStatus.value = prePageItem.statusDefaultTranslationY;
-      prePageItem.zIndex.value = 1;
-    }, duration);
-  };
-
-  const updateStatusAfterGoToPre = (duration: number) => {
-    setTimeout(() => {
-      const curPageItemTopValue = pageItem.top.value;
-      pageItem.top.value = prePageItem.top.value;
-      pageItem.translationY.value = pageItem.statusDefaultTranslationY;
-      pageItem.preStatus.value = pageItem.statusDefaultTranslationY;
-      pageItem.zIndex.value = 2;
-
-      prePageItem.top.value = nextPageItem.top.value;
-      prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
-      prePageItem.preStatus.value = prePageItem.statusDefaultTranslationY;
-      prePageItem.zIndex.value = 2;
-
-      nextPageItem.top.value = curPageItemTopValue;
-      nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
-      nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslationY;
-      nextPageItem.zIndex.value = 1;
-    }, duration);
-  };
-
-  const finishLoading = (isHeader: boolean, goToNextPage: boolean = true) => {
+  const finishLoading = (goToNext: boolean, goToNextPage: boolean = true) => {
     if (goToNextPage) {
-      if (isHeader) {
-        if (pageItem.preStatus.value !== pageItem.statusNextTranslationY) {
-          pageItem.preStatus.value = pageItem.statusNextTranslationY;
-        }
-        if (pageItem.translationY.value !== pageItem.statusNextTranslationY) {
-          pageItem.translationY.value = withTiming(pageItem.statusNextTranslationY, {
-            duration: pageItem.animatedDurationForGoToPreOrNext,
-          });
-          prePageItem.translationY.value = withTiming(
-            prePageItem.statusNextTranslationY,
-            { duration: prePageItem.animatedDurationForGoToPreOrNext },
-            (finished?: boolean, _current?: AnimatableValue) => {
-              if (finished) {
-                // 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
-                runOnJS(updateStatusAfterGoToNext)(0);
-              }
-            }
-          );
-        }
-      } else {
-        if (pageItem.preStatus.value !== pageItem.statusPreTranslationY) {
-          pageItem.preStatus.value = pageItem.statusPreTranslationY;
-        }
-        if (pageItem.translationY.value !== pageItem.statusPreTranslationY) {
-          pageItem.translationY.value = withTiming(pageItem.statusPreTranslationY, {
-            duration: pageItem.animatedDurationForGoToPreOrNext,
-          });
-          nextPageItem.translationY.value = withTiming(
-            nextPageItem.statusPreTranslationY,
-            { duration: nextPageItem.animatedDurationForGoToPreOrNext },
-            (finished?: boolean, _current?: AnimatableValue) => {
-              if (finished) {
-                // 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
-                runOnJS(updateStatusAfterGoToPre)(0);
-              }
-            }
-          );
-        }
-      }
+      pullToNextHelper.goToPreOrNext(goToNext, pageItem);
     } else {
       if (pageItem.translationY.value !== pageItem.statusDefaultTranslationY) {
         pageItem.translationY.value = withTiming(pageItem.statusDefaultTranslationY, {
@@ -423,9 +466,9 @@ export default function usePullToNextHelperRef(originPullToNextHelper: PullToNex
   const pullToNextHelperRef = useRef<PullToNextHelper>(originPullToNextHelper);
   const pullToNextHelper = pullToNextHelperRef.current;
 
-  const prePageItemOrigin = pullToNextHelper.getPrePageItemOrigin();
-  const curPageItemOrigin = pullToNextHelper.getCurPageItemOrigin();
-  const nextPageItemOrigin = pullToNextHelper.getNextPageItemOrigin();
+  const prePageItemOrigin = pullToNextHelper.getAPageItem();
+  const curPageItemOrigin = pullToNextHelper.getBPageItem();
+  const nextPageItemOrigin = pullToNextHelper.getCPageItem();
 
   useAnimatedScrollHandlerCustom(prePageItemOrigin);
   useAnimatedScrollHandlerCustom(curPageItemOrigin);

@@ -1,4 +1,4 @@
-import React, { RefAttributes, RefObject, useRef } from 'react';
+import React, { RefAttributes, RefObject, useEffect, useRef } from 'react';
 import {
   Dimensions,
   ScrollView as RNScrollView,
@@ -98,14 +98,15 @@ function App() {
   const PAGE_CONTAINER_HEIGHT = Dimensions.get('window').height; // 容器高度
   const PAGE_ITEM_HEIGHT = PAGE_CONTAINER_HEIGHT; // 每一页的高度
 
-  const originPreNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
-  const originCurNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
-  const originNextNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
+  const originANestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
+  const originBNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
+  const originCNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
 
   const pullTuNextHelperRef = usePullToNextHelperRef(
     new PullToNextHelper([
       new PageItem(
         'A',
+        false,
         PAGE_ITEM_HEIGHT,
         0,
         52,
@@ -124,10 +125,11 @@ function App() {
         useSharedValue(0),
         useSharedValue(true),
         useSharedValue(false),
-        originPreNestedScrollViewRef
+        originANestedScrollViewRef
       ),
       new PageItem(
         'B',
+        true,
         PAGE_ITEM_HEIGHT,
         0,
         52,
@@ -146,10 +148,11 @@ function App() {
         useSharedValue(0),
         useSharedValue(true),
         useSharedValue(false),
-        originCurNestedScrollViewRef
+        originBNestedScrollViewRef
       ),
       new PageItem(
         'C',
+        false,
         PAGE_ITEM_HEIGHT,
         0,
         52,
@@ -168,18 +171,24 @@ function App() {
         useSharedValue(0),
         useSharedValue(true),
         useSharedValue(false),
-        originNextNestedScrollViewRef
+        originCNestedScrollViewRef
       ),
     ])
   );
 
-  const prePageItemOrigin = pullTuNextHelperRef.current.getPrePageItemOrigin();
-  const curPageItemOrigin = pullTuNextHelperRef.current.getCurPageItemOrigin();
-  const nextPageItemOrigin = pullTuNextHelperRef.current.getNextPageItemOrigin();
+  const aItemOrigin = pullTuNextHelperRef.current.getAPageItem();
+  const bPageItemOrigin = pullTuNextHelperRef.current.getBPageItem();
+  const cPageItemOrigin = pullTuNextHelperRef.current.getCPageItem();
 
-  const containerAnimatedStyleForPrePageItemOrigin = useAnimatedStyleCustom(prePageItemOrigin);
-  const containerAnimatedStyleForCurPageItemOrigin = useAnimatedStyleCustom(curPageItemOrigin);
-  const containerAnimatedStyleForNextPageItemOrigin = useAnimatedStyleCustom(nextPageItemOrigin);
+  const containerAnimatedStyleForAPageItemOrigin = useAnimatedStyleCustom(aItemOrigin);
+  const containerAnimatedStyleForBPageItemOrigin = useAnimatedStyleCustom(bPageItemOrigin);
+  const containerAnimatedStyleForCPageItemOrigin = useAnimatedStyleCustom(cPageItemOrigin);
+
+  useEffect(() => {
+    setTimeout(() => {
+      pullTuNextHelperRef.current.goToPreOrNext();
+    }, 1000);
+  }, [pullTuNextHelperRef]);
 
   return (
     <View
@@ -194,12 +203,9 @@ function App() {
         marginTop: StatusBar.currentHeight,
       }}
     >
-      <PageItemView pageItem={prePageItemOrigin} containerAnimatedStyle={containerAnimatedStyleForPrePageItemOrigin} />
-      <PageItemView pageItem={curPageItemOrigin} containerAnimatedStyle={containerAnimatedStyleForCurPageItemOrigin} />
-      <PageItemView
-        pageItem={nextPageItemOrigin}
-        containerAnimatedStyle={containerAnimatedStyleForNextPageItemOrigin}
-      />
+      <PageItemView pageItem={aItemOrigin} containerAnimatedStyle={containerAnimatedStyleForAPageItemOrigin} />
+      <PageItemView pageItem={bPageItemOrigin} containerAnimatedStyle={containerAnimatedStyleForBPageItemOrigin} />
+      <PageItemView pageItem={cPageItemOrigin} containerAnimatedStyle={containerAnimatedStyleForCPageItemOrigin} />
       <TouchableOpacity
         style={styles.resetContainer}
         onPress={() => {
