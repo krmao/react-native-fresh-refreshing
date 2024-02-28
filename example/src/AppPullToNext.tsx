@@ -138,7 +138,7 @@ function App() {
             },
           ]}
         >
-          {Header}
+          {Header({ name: pageItem.name })}
           <View style={{ flex: 1, borderRadius: 5, overflow: 'hidden' }}>
             <AnimatedScrollView
               ref={pageItem.nestedScrollViewRef}
@@ -154,10 +154,10 @@ function App() {
               animatedProps={pageItem.scrollViewProps}
               contentContainerStyle={{}}
             >
-              {ScrollViewContent}
+              {ScrollViewContent({ name: pageItem.name, backgroundColor: pageItem.backgroundColor })}
             </AnimatedScrollView>
           </View>
-          {Footer}
+          {Footer({ name: pageItem.name })}
         </View>
       </Animated.View>
     );
@@ -186,7 +186,7 @@ function App() {
             maxHeight: PAGE_ITEM_HEIGHT * 3,
             minHeight: PAGE_ITEM_HEIGHT * 3,
             width: '100%',
-            backgroundColor: 'cyan',
+            backgroundColor: '#efefef',
           }}
           animatedProps={containerProps}
         >
