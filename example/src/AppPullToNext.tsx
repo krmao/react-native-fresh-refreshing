@@ -211,7 +211,14 @@ function App() {
           <TouchableOpacity
             style={styles.resetContainer}
             onPress={() => {
-              pullTuNextHelperRef.current.reset();
+              pullTuNextHelperRef.current.reset((pageItem) => {
+                pageItem.top.value = PullToNextHelper.getDefaultTop(
+                  pageItem.name,
+                  pageItem.height,
+                  defaultCurTopInPageContainer
+                );
+                return pageItem;
+              });
             }}
           >
             <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#ffffff' }}>RESTORE</Text>

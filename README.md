@@ -10,7 +10,7 @@ Based on [react-native-fresh-refresh](https://github.com/4TWIGGERS/), research s
 >
 > ***Not ready yet***
 
-<img alt='PullToNext' src="./preview/PullToNext_W_240.gif" width='240'>
+<img alt='PullToNext' src="./preview/PullToNext_W_240_FPS_48.gif" width='240'>
 
 ### Second floor
 
