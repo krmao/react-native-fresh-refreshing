@@ -34,6 +34,8 @@ export class PageItem {
   public readonly statusFooterTranslation: number = -52; // FOOTER 加载中
   public readonly statusPreTranslation: number = 0; // 上一页
   public readonly statusNextTranslation: number = 0; // 下一页
+  private _prePageItem: PageItem | null = null;
+  private _nextPageItem: PageItem | null = null;
 
   public constructor(
     name: string,
@@ -89,6 +91,22 @@ export class PageItem {
 
   get scrollViewProps(): Partial<any> | undefined {
     return this._scrollViewProps;
+  }
+
+  get prePageItem(): PageItem | null {
+    return this._prePageItem;
+  }
+
+  get nextPageItem(): PageItem | null {
+    return this._nextPageItem;
+  }
+
+  set prePageItem(prePageItem: PageItem) {
+    this._prePageItem = prePageItem;
+  }
+
+  set nextPageItem(nextPageItem: PageItem) {
+    this._nextPageItem = nextPageItem;
   }
 
   set scrollHandler(scrollHandler: (event: NativeSyntheticEvent<NativeScrollEvent>) => void) {
@@ -253,9 +271,13 @@ function usePanGestureCustom(pageItem: PageItem) {
         if (isHeader) {
           if (pageItem.translationY.value !== pageItem.statusNextTranslation) {
             pageItem.translationY.value = withTiming(pageItem.statusNextTranslation, { duration: 200 });
+            (pageItem.prePageItem as PageItem).translationY.value = withTiming(pageItem.statusNextTranslation, {
+              duration: 200,
+            });
           }
           if (pageItem.preStatus.value !== pageItem.statusNextTranslation) {
             pageItem.preStatus.value = pageItem.statusNextTranslation;
+            (pageItem.prePageItem as PageItem).preStatus.value = pageItem.statusNextTranslation;
           }
         } else {
           if (pageItem.translationY.value !== pageItem.statusPreTranslation) {
@@ -344,6 +366,16 @@ export default function usePullToNextHelperRef(originPullToNextHelper: PullToNex
   const prePageItemOrigin = pullToNextHelper.getPrePageItemOrigin();
   const curPageItemOrigin = pullToNextHelper.getCurPageItemOrigin();
   const nextPageItemOrigin = pullToNextHelper.getNextPageItemOrigin();
+
+  // TODO 循环引用
+  // prePageItemOrigin.prePageItem = nextPageItemOrigin;
+  // prePageItemOrigin.nextPageItem = curPageItemOrigin;
+  // //
+  // curPageItemOrigin.prePageItem = prePageItemOrigin;
+  // curPageItemOrigin.nextPageItem = nextPageItemOrigin;
+  // //
+  // nextPageItemOrigin.prePageItem = curPageItemOrigin;
+  // nextPageItemOrigin.nextPageItem = prePageItemOrigin;
 
   useAnimatedScrollHandlerCustom(prePageItemOrigin);
   useAnimatedScrollHandlerCustom(curPageItemOrigin);
