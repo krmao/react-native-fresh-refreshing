@@ -6,7 +6,6 @@ import {
   useAnimatedProps,
   useAnimatedScrollHandler,
   useAnimatedStyle,
-  useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
@@ -14,6 +13,7 @@ import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 export class PageItem {
   public readonly name: string;
   public readonly height: number;
+  public readonly preStatus: SharedValue<number>;
   public readonly translationY: SharedValue<number>;
   public readonly isTouching: SharedValue<boolean>;
   public readonly isEnabledGesture: SharedValue<boolean>;
@@ -30,6 +30,7 @@ export class PageItem {
   public constructor(
     name: string,
     height: number,
+    preStatus: SharedValue<number>,
     translationY: SharedValue<number>,
     isTouching: SharedValue<boolean>,
     isEnabledGesture: SharedValue<boolean>,
@@ -42,6 +43,7 @@ export class PageItem {
   ) {
     this.name = name;
     this.height = height;
+    this.preStatus = preStatus;
     this.translationY = translationY;
     this.isTouching = isTouching;
     this.isEnabledGesture = isEnabledGesture;
@@ -168,6 +170,7 @@ export class PullTuNextHelper {
 
   public restore = () => {
     this.pageItemArray = this.pageItemOriginArray.map((pageItem) => {
+      pageItem.preStatus.value = 0;
       pageItem.translationY.value = 0;
       pageItem.isTouching.value = false;
       pageItem.isEnabledGesture.value = true;
@@ -214,14 +217,14 @@ export function useAnimatedStyleCustom(pageItem: PageItem) {
   });
 }
 
-function usePanGesture(pageItem: PageItem) {
+export function usePanGesture(pageItem: PageItem) {
   const PAGE_ITEM_HEIGHT = pageItem.height;
   const STATUS_CURRENT_PAGE = 0; // 默认状态
   const STATUS_CURRENT_PAGE_HEADER_LOADING = 100; // header 加载中
   const STATUS_CURRENT_PAGE_FOOTER_LOADING = -100; // footer 加载中
   const STATUS_PRE_PAGE = -PAGE_ITEM_HEIGHT + 100; // 上一页
   const STATUS_NEXT_PAGE = PAGE_ITEM_HEIGHT - 100; // 下一页
-  const preStatus = useSharedValue(STATUS_CURRENT_PAGE);
+  const preStatus = pageItem.preStatus;
 
   if (!pageItem.panGesture) {
     const simulateScroll = () => {

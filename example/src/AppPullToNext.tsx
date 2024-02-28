@@ -43,6 +43,7 @@ function App() {
         'A',
         PAGE_ITEM_HEIGHT,
         useSharedValue(0),
+        useSharedValue(0),
         useSharedValue(false),
         useSharedValue(true),
         useSharedValue(0),
@@ -56,6 +57,7 @@ function App() {
         'B',
         PAGE_ITEM_HEIGHT,
         useSharedValue(0),
+        useSharedValue(0),
         useSharedValue(false),
         useSharedValue(true),
         useSharedValue(0),
@@ -68,6 +70,7 @@ function App() {
       new PageItem(
         'C',
         PAGE_ITEM_HEIGHT,
+        useSharedValue(0),
         useSharedValue(0),
         useSharedValue(false),
         useSharedValue(true),
