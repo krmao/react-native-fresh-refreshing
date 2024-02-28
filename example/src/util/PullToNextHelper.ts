@@ -37,6 +37,7 @@ export class PageItem {
   public readonly statusFooterTranslation: number = -52; // FOOTER 加载中
   public readonly statusPreTranslation: number = 0; // 上一页
   public readonly statusNextTranslation: number = 0; // 下一页
+  public readonly animatedDuration: number = 300; // 动画时长
 
   public constructor(
     name: string,
@@ -259,10 +260,12 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
           pageItem.preStatus.value = pageItem.statusNextTranslation;
         }
         if (pageItem.translationY.value !== pageItem.statusNextTranslation) {
-          pageItem.translationY.value = withTiming(pageItem.statusNextTranslation, { duration: 200 });
+          pageItem.translationY.value = withTiming(pageItem.statusNextTranslation, {
+            duration: pageItem.animatedDuration,
+          });
           prePageItem.translationY.value = withTiming(
             prePageItem.statusNextTranslation,
-            { duration: 200 },
+            { duration: prePageItem.animatedDuration },
             (finished?: boolean, _current?: AnimatableValue) => {
               if (finished) {
                 const curPageItemTopValue = pageItem.top.value;
@@ -289,10 +292,12 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
           pageItem.preStatus.value = pageItem.statusPreTranslation;
         }
         if (pageItem.translationY.value !== pageItem.statusPreTranslation) {
-          pageItem.translationY.value = withTiming(pageItem.statusPreTranslation, { duration: 200 });
+          pageItem.translationY.value = withTiming(pageItem.statusPreTranslation, {
+            duration: pageItem.animatedDuration,
+          });
           nextPageItem.translationY.value = withTiming(
             nextPageItem.statusPreTranslation,
-            { duration: 200 },
+            { duration: nextPageItem.animatedDuration },
             (finished?: boolean, _current?: AnimatableValue) => {
               if (finished) {
                 const curPageItemTopValue = pageItem.top.value;
@@ -317,7 +322,9 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
       }
     } else {
       if (pageItem.translationY.value !== pageItem.statusDefaultTranslation) {
-        pageItem.translationY.value = withTiming(pageItem.statusDefaultTranslation, { duration: 200 });
+        pageItem.translationY.value = withTiming(pageItem.statusDefaultTranslation, {
+          duration: pageItem.animatedDuration,
+        });
       }
       if (pageItem.preStatus.value !== pageItem.statusDefaultTranslation) {
         pageItem.preStatus.value = pageItem.statusDefaultTranslation;
@@ -357,24 +364,32 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
       // close sheet if velocity or travel is good
       if (e.translationY >= pageItem.statusHeaderTranslation && pageItem.scrollY.value < 1) {
         pageItem.isEnabledGesture.value = false;
-        pageItem.translationY.value = withTiming(pageItem.statusHeaderTranslation, { duration: 200 }, (finished) => {
-          if (finished) {
-            runOnJS(handleLoading)(true);
+        pageItem.translationY.value = withTiming(
+          pageItem.statusHeaderTranslation,
+          { duration: pageItem.animatedDuration },
+          (finished) => {
+            if (finished) {
+              runOnJS(handleLoading)(true);
+            }
           }
-        });
+        );
         pageItem.preStatus.value = pageItem.statusHeaderTranslation;
         // start header loading
       } else if (e.translationY <= pageItem.statusFooterTranslation && pageItem.isCanPullingDownToUp.value) {
         pageItem.isEnabledGesture.value = false;
-        pageItem.translationY.value = withTiming(pageItem.statusFooterTranslation, { duration: 200 }, (finished) => {
-          if (finished) {
-            runOnJS(handleLoading)(false);
+        pageItem.translationY.value = withTiming(
+          pageItem.statusFooterTranslation,
+          { duration: pageItem.animatedDuration },
+          (finished) => {
+            if (finished) {
+              runOnJS(handleLoading)(false);
+            }
           }
-        });
+        );
         pageItem.preStatus.value = pageItem.statusHeaderTranslation;
         // start header loading
       } else {
-        pageItem.translationY.value = withTiming(pageItem.preStatus.value, { duration: 200 });
+        pageItem.translationY.value = withTiming(pageItem.preStatus.value, { duration: pageItem.animatedDuration });
       }
     })
     .onFinalize((_e) => {
