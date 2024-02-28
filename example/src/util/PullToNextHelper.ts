@@ -157,10 +157,30 @@ export class PullToNextHelper {
     return { prePageItem: prePageItem, nextPageItem: nextPageItem };
   };
 
+  public static getDefaultTop = (pageItemName: string, pageItemHeight: number): number => {
+    let defaultTop = 0;
+    switch (pageItemName) {
+      case 'A': {
+        defaultTop = 0;
+        break;
+      }
+      case 'B': {
+        defaultTop = pageItemHeight;
+        break;
+      }
+      case 'C': {
+        defaultTop = pageItemHeight + pageItemHeight;
+        break;
+      }
+    }
+    return defaultTop;
+  };
+
   public reset = () => {
     this.pageItemArray = this.pageItemOriginArray.map((pageItem) => {
-      pageItem.preStatus.value = 0;
-      pageItem.translationY.value = 0;
+      pageItem.top.value = PullToNextHelper.getDefaultTop(pageItem.name, pageItem.height);
+      pageItem.preStatus.value = pageItem.statusDefaultTranslation;
+      pageItem.translationY.value = pageItem.statusDefaultTranslation;
       pageItem.isTouching.value = false;
       pageItem.isEnabledGesture.value = true;
       pageItem.lastY.value = 0;
@@ -252,13 +272,31 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
           );
         }
       } else {
-        if (pageItem.translationY.value !== pageItem.statusPreTranslation) {
-          pageItem.translationY.value = withTiming(pageItem.statusPreTranslation, { duration: 200 });
-          nextPageItem.translationY.value = withTiming(pageItem.statusPreTranslation, { duration: 200 });
-        }
         if (pageItem.preStatus.value !== pageItem.statusPreTranslation) {
           pageItem.preStatus.value = pageItem.statusPreTranslation;
-          nextPageItem.preStatus.value = pageItem.statusPreTranslation;
+        }
+        if (pageItem.translationY.value !== pageItem.statusPreTranslation) {
+          pageItem.translationY.value = withTiming(pageItem.statusPreTranslation, { duration: 200 });
+          nextPageItem.translationY.value = withTiming(
+            nextPageItem.statusPreTranslation,
+            { duration: 200 },
+            (finished?: boolean, _current?: AnimatableValue) => {
+              if (finished) {
+                const curPageItemTopValue = pageItem.top.value;
+                pageItem.top.value = prePageItem.top.value;
+                pageItem.translationY.value = pageItem.statusDefaultTranslation;
+                pageItem.preStatus.value = pageItem.statusDefaultTranslation;
+
+                prePageItem.top.value = nextPageItem.top.value;
+                prePageItem.translationY.value = prePageItem.statusDefaultTranslation;
+                prePageItem.preStatus.value = prePageItem.statusDefaultTranslation;
+
+                nextPageItem.top.value = curPageItemTopValue;
+                nextPageItem.translationY.value = nextPageItem.statusDefaultTranslation;
+                nextPageItem.preStatus.value = nextPageItem.statusDefaultTranslation;
+              }
+            }
+          );
         }
       }
     } else {
