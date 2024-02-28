@@ -31,7 +31,9 @@ const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollVie
   Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
 
 function App() {
-  const PAGE_ITEM_HEIGHT = Dimensions.get('window').height / 3;
+  const defaultCurTop = 15; // 默认当前页面的 top 值从什么地方开始, 决定了顶部是否漏出一点上一个页面
+  const PAGE_ITEM_HEIGHT = Dimensions.get('window').height - 15 - 15; // 每一页的高度
+
   const originPreNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originCurNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
   const originNextNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
@@ -48,7 +50,7 @@ function App() {
         PAGE_ITEM_HEIGHT,
         'red',
         useSharedValue(0),
-        useSharedValue(PullToNextHelper.getDefaultTop('A', PAGE_ITEM_HEIGHT)),
+        useSharedValue(PullToNextHelper.getDefaultTop('A', PAGE_ITEM_HEIGHT, defaultCurTop)),
         useSharedValue(3),
         useSharedValue(0),
         useSharedValue(false),
@@ -70,7 +72,7 @@ function App() {
         PAGE_ITEM_HEIGHT,
         'green',
         useSharedValue(0),
-        useSharedValue(PullToNextHelper.getDefaultTop('B', PAGE_ITEM_HEIGHT)),
+        useSharedValue(PullToNextHelper.getDefaultTop('B', PAGE_ITEM_HEIGHT, defaultCurTop)),
         useSharedValue(2),
         useSharedValue(0),
         useSharedValue(false),
@@ -92,7 +94,7 @@ function App() {
         PAGE_ITEM_HEIGHT,
         'blue',
         useSharedValue(0),
-        useSharedValue(PullToNextHelper.getDefaultTop('C', PAGE_ITEM_HEIGHT)),
+        useSharedValue(PullToNextHelper.getDefaultTop('C', PAGE_ITEM_HEIGHT, defaultCurTop)),
         useSharedValue(3),
         useSharedValue(0),
         useSharedValue(false),

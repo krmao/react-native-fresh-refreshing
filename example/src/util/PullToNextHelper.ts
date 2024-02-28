@@ -157,26 +157,26 @@ export class PullToNextHelper {
     return { prePageItem: prePageItem, nextPageItem: nextPageItem };
   };
 
-  public static getDefaultTop = (pageItemName: string, pageItemHeight: number): number => {
+  public static getDefaultTop = (pageItemName: string, pageItemHeight: number, defaultCurTop: number = 0): number => {
     let defaultTop = 0;
     switch (pageItemName) {
       case 'A': {
-        defaultTop = 0;
+        defaultTop = defaultCurTop - pageItemHeight;
         break;
       }
       case 'B': {
-        defaultTop = pageItemHeight;
+        defaultTop = defaultCurTop;
         break;
       }
       case 'C': {
-        defaultTop = pageItemHeight + pageItemHeight;
+        defaultTop = defaultCurTop + pageItemHeight;
         break;
       }
     }
     return defaultTop;
   };
 
-  public reset = () => {
+  public reset = (filter?: (pageItem: PageItem) => PageItem) => {
     this.pageItemArray = this.pageItemOriginArray.map((pageItem) => {
       pageItem.top.value = PullToNextHelper.getDefaultTop(pageItem.name, pageItem.height);
       pageItem.preStatus.value = pageItem.statusDefaultTranslation;
@@ -187,6 +187,9 @@ export class PullToNextHelper {
       pageItem.touchingOffset.value = 0;
       pageItem.scrollY.value = 0;
       pageItem.nestedScrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: true });
+      if (filter) {
+        pageItem = filter(pageItem);
+      }
       return { ...pageItem } as PageItem;
     });
   };
