@@ -13,7 +13,10 @@ import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 export class PageItem {
   public readonly name: string;
   public readonly height: number;
+  public readonly backgroundColor: string;
   public readonly preStatus: SharedValue<number>;
+  public readonly top: SharedValue<number>;
+  public readonly zIndex: SharedValue<number>;
   public readonly translationY: SharedValue<number>;
   public readonly isTouching: SharedValue<boolean>;
   public readonly isEnabledGesture: SharedValue<boolean>;
@@ -30,7 +33,10 @@ export class PageItem {
   public constructor(
     name: string,
     height: number,
+    backgroundColor: string,
     preStatus: SharedValue<number>,
+    top: SharedValue<number>,
+    zIndex: SharedValue<number>,
     translationY: SharedValue<number>,
     isTouching: SharedValue<boolean>,
     isEnabledGesture: SharedValue<boolean>,
@@ -43,7 +49,10 @@ export class PageItem {
   ) {
     this.name = name;
     this.height = height;
+    this.backgroundColor = backgroundColor;
     this.preStatus = preStatus;
+    this.top = top;
+    this.zIndex = zIndex;
     this.translationY = translationY;
     this.isTouching = isTouching;
     this.isEnabledGesture = isEnabledGesture;
@@ -205,7 +214,9 @@ export function useAnimatedStyleCustom(pageItem: PageItem) {
   return useAnimatedStyle(() => {
     // const isPullingUpToDown = pageItem.translationY.value >= 0;
     // const isPullingDownToUp = pageItem.translationY.value < 0;
-    return { transform: [{ translateY: pageItem.translationY.value }] };
+    return {
+      transform: [{ translateY: pageItem.translationY.value }],
+    };
   });
 }
 

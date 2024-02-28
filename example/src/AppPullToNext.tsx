@@ -22,7 +22,7 @@ import {
 } from 'react-native-gesture-handler';
 import Animated, { AnimateProps, useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { NativeViewGestureHandlerProps } from 'react-native-gesture-handler/src/handlers/NativeViewGestureHandler';
-import { Footer, Header, ScrollViewContent } from './util/Test';
+import { Footer, Header, ScrollViewContent } from './util/PullToNextComponents';
 import usePullToNextHelperRef, { PageItem, PullTuNextHelper, useAnimatedStyleCustom } from './util/PullTuNextHelper';
 
 // https://github.com/software-mansion/react-native-gesture-handler/issues/420#issuecomment-1356861934
@@ -42,7 +42,10 @@ function App() {
       new PageItem(
         'A',
         PAGE_ITEM_HEIGHT,
+        'red',
         useSharedValue(0),
+        useSharedValue(0),
+        useSharedValue(3),
         useSharedValue(0),
         useSharedValue(false),
         useSharedValue(true),
@@ -56,7 +59,10 @@ function App() {
       new PageItem(
         'B',
         PAGE_ITEM_HEIGHT,
+        'green',
         useSharedValue(0),
+        useSharedValue(PAGE_ITEM_HEIGHT),
+        useSharedValue(2),
         useSharedValue(0),
         useSharedValue(false),
         useSharedValue(true),
@@ -70,7 +76,10 @@ function App() {
       new PageItem(
         'C',
         PAGE_ITEM_HEIGHT,
+        'blue',
         useSharedValue(0),
+        useSharedValue(PAGE_ITEM_HEIGHT + PAGE_ITEM_HEIGHT),
+        useSharedValue(3),
         useSharedValue(0),
         useSharedValue(false),
         useSharedValue(true),
@@ -103,34 +112,31 @@ function App() {
   }));
 
   const pageView = (pageItem: PageItem, sheetAnimatedStyle: any) => {
-    const isOriginPre = pageItem.name === 'A';
-    // const isOriginCurrent = pageItem.name === 'B';
-    const isOriginNext = pageItem.name === 'C';
     return (
       <Animated.View
         style={[
           sheetAnimatedStyle,
           {
-            overflow: 'hidden',
-            height: PAGE_ITEM_HEIGHT,
-            maxHeight: PAGE_ITEM_HEIGHT,
-            minHeight: PAGE_ITEM_HEIGHT,
             width: '100%',
-            backgroundColor: isOriginPre ? 'red' : isOriginNext ? 'blue' : 'green',
-            zIndex: isOriginPre ? 3 : isOriginNext ? 3 : 2,
-            top: isOriginPre ? 0 : isOriginNext ? PAGE_ITEM_HEIGHT + PAGE_ITEM_HEIGHT : PAGE_ITEM_HEIGHT,
+            overflow: 'hidden',
             position: 'absolute',
+            top: pageItem.top,
+            zIndex: pageItem.zIndex,
+            height: pageItem.height,
+            maxHeight: pageItem.height,
+            minHeight: pageItem.height,
+            backgroundColor: pageItem.backgroundColor,
           },
         ]}
       >
         <View
           style={[
             {
-              overflow: 'hidden',
-              height: PAGE_ITEM_HEIGHT,
-              maxHeight: PAGE_ITEM_HEIGHT,
-              minHeight: PAGE_ITEM_HEIGHT,
               width: '100%',
+              overflow: 'hidden',
+              height: pageItem.height,
+              maxHeight: pageItem.height,
+              minHeight: pageItem.height,
             },
           ]}
         >
