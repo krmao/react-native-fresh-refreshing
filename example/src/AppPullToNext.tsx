@@ -1,5 +1,3 @@
-// noinspection JSUnusedLocalSymbols
-
 import React, { RefAttributes, RefObject, useRef } from 'react';
 import {
   Dimensions,
