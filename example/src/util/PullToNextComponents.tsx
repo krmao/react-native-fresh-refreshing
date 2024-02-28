@@ -1,12 +1,12 @@
 import { Pressable, Text, View } from 'react-native';
 import React from 'react';
 
-export const Header = ({ name }: { name: string }) => {
+export const Header = ({ name, backgroundColor }: { name: string; backgroundColor: string }) => {
   return (
     <View
       style={{
         height: 52,
-        backgroundColor: '#22222222',
+        backgroundColor: backgroundColor,
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 5,
@@ -16,12 +16,12 @@ export const Header = ({ name }: { name: string }) => {
     </View>
   );
 };
-export const Footer = ({ name }: { name: string }) => {
+export const Footer = ({ name, backgroundColor }: { name: string; backgroundColor: string }) => {
   return (
     <View
       style={{
         height: 52,
-        backgroundColor: '#22222222',
+        backgroundColor: backgroundColor,
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 5,
@@ -31,7 +31,15 @@ export const Footer = ({ name }: { name: string }) => {
     </View>
   );
 };
-export const ScrollViewContent = ({ name, backgroundColor }: { name: string; backgroundColor: string }) => {
+export const ScrollViewContent = ({
+  name,
+  backgroundColor,
+  textBackgroundColor,
+}: {
+  name: string;
+  backgroundColor: string;
+  textBackgroundColor: string;
+}) => {
   return (
     <View style={{ backgroundColor: backgroundColor, borderRadius: 5 }}>
       {[...Array(30).keys()].map((i) => (
@@ -41,7 +49,7 @@ export const ScrollViewContent = ({ name, backgroundColor }: { name: string; bac
             height: 42,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: '#aec33aaa',
+            backgroundColor: textBackgroundColor,
             marginHorizontal: 5,
             marginTop: 5,
             marginBottom: i === 29 ? 5 : 0,

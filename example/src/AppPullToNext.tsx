@@ -59,7 +59,7 @@ const PageItemView = ({ pageItem, containerAnimatedStyle }: { pageItem: PageItem
             },
           ]}
         >
-          {Header({ name: pageItem.name })}
+          {Header({ name: pageItem.name, backgroundColor: pageItem.backgroundColor })}
           <View style={{ flex: 1, borderRadius: 5, overflow: 'hidden' }}>
             <AnimatedScrollView
               ref={pageItem.nestedScrollViewRef}
@@ -75,10 +75,14 @@ const PageItemView = ({ pageItem, containerAnimatedStyle }: { pageItem: PageItem
               animatedProps={pageItem.scrollViewProps}
               contentContainerStyle={{}}
             >
-              {ScrollViewContent({ name: pageItem.name, backgroundColor: pageItem.backgroundColor })}
+              {ScrollViewContent({
+                name: pageItem.name,
+                backgroundColor: pageItem.backgroundColor,
+                textBackgroundColor: pageItem.name === 'A' ? 'pink' : pageItem.name === 'B' ? '#aec33a' : 'skyblue',
+              })}
             </AnimatedScrollView>
           </View>
-          {Footer({ name: pageItem.name })}
+          {Footer({ name: pageItem.name, backgroundColor: pageItem.backgroundColor })}
         </View>
       </Animated.View>
     </GestureDetector>
