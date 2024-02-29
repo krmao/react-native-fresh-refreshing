@@ -155,6 +155,10 @@ export class PullToNextHelper {
     const pageItem = currentShowingCenterNowPageItem;
     const { prePageItem, nextPageItem } = this.getPreAndNextPageItems(pageItem);
 
+    prePageItem.isEnabledGesture.value = false;
+    pageItem.isEnabledGesture.value = false;
+    nextPageItem.isEnabledGesture.value = false;
+
     /**
      * 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
      */
@@ -167,6 +171,7 @@ export class PullToNextHelper {
         pageItem.zIndex.value = 2;
         pageItem.isShowingCenterNow = false;
         pageItem.lastY.value = 0;
+        pageItem.isEnabledGesture.value = false;
 
         nextPageItem.top.value = prePageItem.top.value;
         nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
@@ -174,6 +179,7 @@ export class PullToNextHelper {
         nextPageItem.zIndex.value = 2;
         nextPageItem.isShowingCenterNow = false;
         nextPageItem.lastY.value = 0;
+        nextPageItem.isEnabledGesture.value = false;
 
         prePageItem.top.value = curPageItemTopValue;
         prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
@@ -181,6 +187,7 @@ export class PullToNextHelper {
         prePageItem.zIndex.value = 1;
         prePageItem.isShowingCenterNow = true;
         prePageItem.lastY.value = 0;
+        prePageItem.isEnabledGesture.value = true;
       }, duration);
     };
 
@@ -196,6 +203,7 @@ export class PullToNextHelper {
         pageItem.zIndex.value = 2;
         pageItem.isShowingCenterNow = false;
         pageItem.lastY.value = 0;
+        pageItem.isEnabledGesture.value = true;
 
         prePageItem.top.value = nextPageItem.top.value;
         prePageItem.translationY.value = prePageItem.statusDefaultTranslationY;
@@ -203,6 +211,7 @@ export class PullToNextHelper {
         prePageItem.zIndex.value = 2;
         prePageItem.isShowingCenterNow = false;
         prePageItem.lastY.value = 0;
+        prePageItem.isEnabledGesture.value = true;
 
         nextPageItem.top.value = curPageItemTopValue;
         nextPageItem.translationY.value = nextPageItem.statusDefaultTranslationY;
@@ -210,6 +219,7 @@ export class PullToNextHelper {
         nextPageItem.zIndex.value = 1;
         nextPageItem.isShowingCenterNow = true;
         nextPageItem.lastY.value = 0;
+        nextPageItem.isEnabledGesture.value = true;
       }, duration);
     };
 
@@ -324,24 +334,23 @@ function useAnimatedScrollHandlerCustom(pageItem: PageItem) {
 }
 
 function useAnimatedPropsCustom(pageItem: PageItem) {
+  const isTouching = pageItem.isTouching;
+  const isEnabledGesture = pageItem.isEnabledGesture;
   pageItem.scrollViewProps = useAnimatedProps(() => {
     return {
-      // only scroll if sheet is open
-      // scrollEnabled: preStatus.value === STATUS_CURRENT_PAGE,
-      scrollEnabled: true,
-      // only bounce at bottom or not touching screen
-      // bounces: scrollY.value > 0 || !isTouching.value,
+      scrollEnabled: isEnabledGesture.value,
+      bounces: !isTouching.value,
+      overScrollMode: !isTouching.value ? 'always' : 'never',
     };
   });
   pageItem.containerAnimatedProps = useAnimatedProps<AnimateProps<ViewProps>>(() => ({
-    // pointerEvents: curPageItemIsEnabledGesture.value ? 'auto' : 'none',
-    pointerEvents: 'auto',
+    pointerEvents: isEnabledGesture.value ? 'auto' : 'none',
   }));
 }
 
 function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.MutableRefObject<PullToNextHelper>) {
   const pullToNextHelper = pullToNextHelperRef.current;
-  // const { prePageItem, nextPageItem } = pullToNextHelper.getPreAndNextPageItems(pageItem);
+  const { prePageItem, nextPageItem } = pullToNextHelper.getPreAndNextPageItems(pageItem);
 
   const simulateScroll = () => {
     pageItem.nestedScrollViewRef?.current?.scrollTo?.({
@@ -404,7 +413,10 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
 
       // close sheet if velocity or travel is good
       if (e.translationY >= pageItem.statusHeaderTranslationY && pageItem.scrollY.value < 1) {
+        prePageItem.isEnabledGesture.value = false;
         pageItem.isEnabledGesture.value = false;
+        nextPageItem.isEnabledGesture.value = false;
+
         pageItem.translationY.value = withTiming(
           pageItem.statusHeaderTranslationY,
           { duration: pageItem.animatedDurationForGoToLoading },
@@ -418,7 +430,10 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
         pageItem.preStatus.value = pageItem.statusHeaderTranslationY;
         // start header loading
       } else if (e.translationY <= pageItem.statusFooterTranslationY && pageItem.isCanPullingDownToUp.value) {
+        prePageItem.isEnabledGesture.value = false;
         pageItem.isEnabledGesture.value = false;
+        nextPageItem.isEnabledGesture.value = false;
+
         pageItem.translationY.value = withTiming(
           pageItem.statusFooterTranslationY,
           { duration: pageItem.animatedDurationForGoToLoading },
