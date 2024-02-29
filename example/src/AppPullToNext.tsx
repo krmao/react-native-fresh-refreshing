@@ -1,4 +1,4 @@
-import React, { RefAttributes, RefObject, useEffect, useRef } from 'react';
+import React, { RefAttributes, useRef } from 'react';
 import {
   Dimensions,
   ScrollView as RNScrollView,
@@ -19,7 +19,7 @@ import {
 import Animated, { AnimateProps, useSharedValue } from 'react-native-reanimated';
 import { NativeViewGestureHandlerProps } from 'react-native-gesture-handler/src/handlers/NativeViewGestureHandler';
 import { Footer, Header, ScrollViewContent } from './util/PullToNextComponents';
-import usePullToNextHelperRef, { PageItem, PullToNextHelper, useAnimatedStyleCustom } from './util/PullToNextHelper';
+import usePullToNextHelperRef, { PageItem, PullToNextHelper } from './util/PullToNextHelper';
 
 // https://github.com/software-mansion/react-native-gesture-handler/issues/420#issuecomment-1356861934
 // https://snack.expo.dev/@himanshu266/bottom-sheet-scrollview
@@ -28,12 +28,13 @@ type AnimatedScrollViewProps = RNScrollViewProps & NativeViewGestureHandlerProps
 const AnimatedScrollView: React.FunctionComponent<AnimateProps<AnimatedScrollViewProps>> =
   Animated.createAnimatedComponent<AnimatedScrollViewProps>(RNGHScrollView);
 
-const PageItemView = ({ pageItem, containerAnimatedStyle }: { pageItem: PageItem; containerAnimatedStyle: any }) => {
+// const PageItemView = (pageItem: PageItem) => {
+const PageItemView = ({ pageItem }: { pageItem: PageItem }) => {
   return (
     <GestureDetector gesture={pageItem.panGesture as PanGesture}>
       <Animated.View
         style={[
-          containerAnimatedStyle,
+          pageItem.containerAnimatedStyle,
           {
             width: '100%',
             overflow: 'hidden',
@@ -98,11 +99,7 @@ function App() {
   const PAGE_CONTAINER_HEIGHT = Dimensions.get('window').height; // 容器高度
   const PAGE_ITEM_HEIGHT = PAGE_CONTAINER_HEIGHT; // 每一页的高度
 
-  const originANestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
-  const originBNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
-  const originCNestedScrollViewRef: RefObject<ScrollView> = useRef<ScrollView>(null);
-
-  const pullTuNextHelperRef = usePullToNextHelperRef(
+  const pullToNextHelperRef = usePullToNextHelperRef(
     new PullToNextHelper([
       new PageItem(
         'A',
@@ -125,7 +122,7 @@ function App() {
         useSharedValue(0),
         useSharedValue(true),
         useSharedValue(false),
-        originANestedScrollViewRef
+        useRef<ScrollView>(null)
       ),
       new PageItem(
         'B',
@@ -148,7 +145,7 @@ function App() {
         useSharedValue(0),
         useSharedValue(true),
         useSharedValue(false),
-        originBNestedScrollViewRef
+        useRef<ScrollView>(null)
       ),
       new PageItem(
         'C',
@@ -171,25 +168,21 @@ function App() {
         useSharedValue(0),
         useSharedValue(true),
         useSharedValue(false),
-        originCNestedScrollViewRef
+        useRef<ScrollView>(null)
       ),
     ])
   );
 
-  const aItemOrigin = pullTuNextHelperRef.current.getAPageItem();
-  const bPageItemOrigin = pullTuNextHelperRef.current.getBPageItem();
-  const cPageItemOrigin = pullTuNextHelperRef.current.getCPageItem();
+  const aPageItemOrigin = pullToNextHelperRef.current.getAPageItem();
+  const bPageItemOrigin = pullToNextHelperRef.current.getBPageItem();
+  const cPageItemOrigin = pullToNextHelperRef.current.getCPageItem();
 
-  const containerAnimatedStyleForAPageItemOrigin = useAnimatedStyleCustom(aItemOrigin);
-  const containerAnimatedStyleForBPageItemOrigin = useAnimatedStyleCustom(bPageItemOrigin);
-  const containerAnimatedStyleForCPageItemOrigin = useAnimatedStyleCustom(cPageItemOrigin);
-
-  useEffect(() => {
-    setTimeout(() => {
-      pullTuNextHelperRef.current.goToPreOrNext();
-    }, 2000);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     pullToNextHelperRef.current.goToPreOrNext();
+  //   }, 2000);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
 
   return (
     <View
@@ -204,13 +197,18 @@ function App() {
         marginTop: StatusBar.currentHeight,
       }}
     >
-      <PageItemView pageItem={aItemOrigin} containerAnimatedStyle={containerAnimatedStyleForAPageItemOrigin} />
-      <PageItemView pageItem={bPageItemOrigin} containerAnimatedStyle={containerAnimatedStyleForBPageItemOrigin} />
-      <PageItemView pageItem={cPageItemOrigin} containerAnimatedStyle={containerAnimatedStyleForCPageItemOrigin} />
+      {/*{PageItemView(aPageItemOrigin)}*/}
+      {/*{PageItemView(bPageItemOrigin)}*/}
+      {/*{PageItemView(cPageItemOrigin)}*/}
+
+      <PageItemView pageItem={aPageItemOrigin} />
+      <PageItemView pageItem={bPageItemOrigin} />
+      <PageItemView pageItem={cPageItemOrigin} />
+
       <TouchableOpacity
         style={styles.resetContainer}
         onPress={() => {
-          pullTuNextHelperRef.current.reset((pageItem) => {
+          pullToNextHelperRef.current.reset((pageItem) => {
             pageItem.top.value = PullToNextHelper.getDefaultTop(
               pageItem.name,
               pageItem.height,

@@ -41,6 +41,7 @@ export class PageItem {
   public readonly animatedDurationForGoToLoading: number = 300;
   public readonly animatedDurationForGoToPreOrNext: number = 500;
   public isShowingCenterNow: boolean;
+  public containerAnimatedStyle: any;
 
   public constructor(
     name: 'A' | 'B' | 'C',
@@ -157,12 +158,7 @@ export class PullToNextHelper {
     /**
      * 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
      */
-    const updateStatusAfterGoToNext = (
-      duration: number
-      // prePageItem: PageItem,
-      // pageItem: PageItem,
-      // nextPageItem: PageItem
-    ) => {
+    const updateStatusAfterGoToNext = (duration: number) => {
       setTimeout(() => {
         const curPageItemTopValue = pageItem.top.value;
         pageItem.top.value = nextPageItem.top.value;
@@ -191,12 +187,7 @@ export class PullToNextHelper {
     /**
      * 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
      */
-    const updateStatusAfterGoToPre = (
-      duration: number
-      // prePageItem: PageItem,
-      // pageItem: PageItem,
-      // nextPageItem: PageItem
-    ) => {
+    const updateStatusAfterGoToPre = (duration: number) => {
       setTimeout(() => {
         const curPageItemTopValue = pageItem.top.value;
         pageItem.top.value = prePageItem.top.value;
@@ -236,7 +227,8 @@ export class PullToNextHelper {
           (finished?: boolean, _current?: AnimatableValue) => {
             if (finished) {
               // 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
-              runOnJS(updateStatusAfterGoToNext)(0 /*, prePageItem, pageItem, nextPageItem*/);
+              // worklet 线程到 js线程无法透传 对象, 所以方法为内部函数
+              runOnJS(updateStatusAfterGoToNext)(0);
             }
           }
         );
@@ -255,7 +247,8 @@ export class PullToNextHelper {
           (finished?: boolean, _current?: AnimatableValue) => {
             if (finished) {
               // 通过 runOnJS + setTimeout 解决直接调用导致的闪动问题
-              runOnJS(updateStatusAfterGoToPre)(0 /*, prePageItem, pageItem, nextPageItem*/);
+              // worklet 线程到 js线程无法透传 对象, 所以方法为内部函数
+              runOnJS(updateStatusAfterGoToPre)(0);
             }
           }
         );
@@ -346,19 +339,7 @@ function useAnimatedPropsCustom(pageItem: PageItem) {
   }));
 }
 
-export function useAnimatedStyleCustom(pageItem: PageItem) {
-  return useAnimatedStyle(() => {
-    // const isPullingUpToDown = pageItem.translationY.value >= 0;
-    // const isPullingDownToUp = pageItem.translationY.value < 0;
-    return { transform: [{ translateY: pageItem.translationY.value }] };
-  });
-}
-
 function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.MutableRefObject<PullToNextHelper>) {
-  if (pageItem.panGesture) {
-    return;
-  }
-
   const pullToNextHelper = pullToNextHelperRef.current;
   // const { prePageItem, nextPageItem } = pullToNextHelper.getPreAndNextPageItems(pageItem);
 
@@ -414,6 +395,7 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
         pageItem.preStatus.value !== pageItem.statusDefaultTranslationY &&
         pageItem.scrollY.value < pageItem.statusDefaultTranslationY
       ) {
+        // worklet 线程到 js线程无法透传 对象, 所以方法为内部函数
         runOnJS(simulateScroll)();
       }
     })
@@ -428,6 +410,7 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
           { duration: pageItem.animatedDurationForGoToLoading },
           (finished) => {
             if (finished) {
+              // worklet 线程到 js线程无法透传 对象, 所以方法为内部函数
               runOnJS(handleLoading)(false);
             }
           }
@@ -441,6 +424,7 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
           { duration: pageItem.animatedDurationForGoToLoading },
           (finished) => {
             if (finished) {
+              // worklet 线程到 js线程无法透传 对象, 所以方法为内部函数
               runOnJS(handleLoading)(true);
             }
           }
@@ -454,7 +438,6 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
       }
     })
     .onFinalize((_e) => {
-      // stopped touching screen
       pageItem.isTouching.value = false;
       pageItem.touchingOffset.value = 0;
     })
@@ -462,23 +445,34 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
     .runOnJS(false);
 }
 
+function useAnimatedStyleCustom(pageItem: PageItem) {
+  const translationY: SharedValue<number> = pageItem.translationY;
+  pageItem.containerAnimatedStyle = useAnimatedStyle(() => {
+    // const isPullingUpToDown = pageItem.translationY.value >= 0;
+    // const isPullingDownToUp = pageItem.translationY.value < 0;
+    return { transform: [{ translateY: translationY.value }] };
+  });
+}
+
 export default function usePullToNextHelperRef(originPullToNextHelper: PullToNextHelper) {
   const pullToNextHelperRef = useRef<PullToNextHelper>(originPullToNextHelper);
-  const pullToNextHelper = pullToNextHelperRef.current;
+  const aPageItemOrigin = pullToNextHelperRef.current.getAPageItem();
+  const bPageItemOrigin = pullToNextHelperRef.current.getBPageItem();
+  const cPageItemOrigin = pullToNextHelperRef.current.getCPageItem();
 
-  const prePageItemOrigin = pullToNextHelper.getAPageItem();
-  const curPageItemOrigin = pullToNextHelper.getBPageItem();
-  const nextPageItemOrigin = pullToNextHelper.getCPageItem();
+  useAnimatedScrollHandlerCustom(aPageItemOrigin);
+  useAnimatedScrollHandlerCustom(bPageItemOrigin);
+  useAnimatedScrollHandlerCustom(cPageItemOrigin);
+  useAnimatedPropsCustom(aPageItemOrigin);
+  useAnimatedPropsCustom(bPageItemOrigin);
+  useAnimatedPropsCustom(cPageItemOrigin);
+  useAnimatedStyleCustom(aPageItemOrigin);
+  useAnimatedStyleCustom(bPageItemOrigin);
+  useAnimatedStyleCustom(cPageItemOrigin);
 
-  useAnimatedScrollHandlerCustom(prePageItemOrigin);
-  useAnimatedScrollHandlerCustom(curPageItemOrigin);
-  useAnimatedScrollHandlerCustom(nextPageItemOrigin);
-  useAnimatedPropsCustom(prePageItemOrigin);
-  useAnimatedPropsCustom(curPageItemOrigin);
-  useAnimatedPropsCustom(nextPageItemOrigin);
-  usePanGestureCustom(prePageItemOrigin, pullToNextHelperRef);
-  usePanGestureCustom(curPageItemOrigin, pullToNextHelperRef);
-  usePanGestureCustom(nextPageItemOrigin, pullToNextHelperRef);
+  usePanGestureCustom(aPageItemOrigin, pullToNextHelperRef);
+  usePanGestureCustom(bPageItemOrigin, pullToNextHelperRef);
+  usePanGestureCustom(cPageItemOrigin, pullToNextHelperRef);
 
   return pullToNextHelperRef;
 }
