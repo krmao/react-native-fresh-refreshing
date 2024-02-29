@@ -25,16 +25,16 @@ export class PageItem {
   public readonly lastY: SharedValue<number>;
   public readonly touchingOffset: SharedValue<number>;
   public readonly scrollY: SharedValue<number>;
-  public readonly isCanPullingUpToDown: SharedValue<boolean>;
-  public readonly isCanPullingDownToUp: SharedValue<boolean>;
+  public readonly isCanPullingUpToDown: SharedValue<boolean>; // true, 滑动方向上 scroll 无法内部滚动
+  public readonly isCanPullingDownToUp: SharedValue<boolean>; // true, 滑动方向上 scroll 无法内部滚动
   private _scrollHandler: ((event: NativeSyntheticEvent<NativeScrollEvent>) => void) | undefined = undefined;
   private _panGesture: PanGesture | null = null;
   private _scrollViewProps: Partial<any> | undefined = undefined;
   private _containerAnimatedProps: Partial<AnimateProps<ViewProps>> | undefined = undefined;
   public readonly nestedScrollViewRef: RefObject<ScrollView>;
   public readonly statusDefaultTranslationY: number = 0; // 默认状态
-  public readonly statusHeaderTranslationY: number = 52; // HEADER 加载中
-  public readonly statusFooterTranslationY: number = -52; // FOOTER 加载中
+  public readonly statusHeaderLoadingTranslationY: number = 52; // HEADER 加载中
+  public readonly statusFooterLoadingTranslationY: number = -52; // FOOTER 加载中
   public readonly statusPreTranslationY: number = 0; // 上一页
   public readonly statusNextTranslationY: number = 0; // 下一页
   public readonly animatedDurationForGoToDefault: number = 300;
@@ -83,8 +83,8 @@ export class PageItem {
     this.isCanPullingDownToUp = isCanPullingDownToUp;
     this.nestedScrollViewRef = nestedScrollViewRef;
     this.statusDefaultTranslationY = statusDefaultTranslationY;
-    this.statusHeaderTranslationY = statusHeaderTranslationY;
-    this.statusFooterTranslationY = statusFooterTranslationY;
+    this.statusHeaderLoadingTranslationY = statusHeaderTranslationY;
+    this.statusFooterLoadingTranslationY = statusFooterTranslationY;
     this.statusPreTranslationY = statusPreTranslationY;
     this.statusNextTranslationY = statusNextTranslationY;
   }
@@ -329,7 +329,7 @@ function useAnimatedScrollHandlerCustom(pageItem: PageItem) {
     let scrollHeight = layoutMeasurement.height + contentOffset.y;
     pageItem.scrollY.value = Math.round(contentOffset.y);
     pageItem.isCanPullingUpToDown.value = pageItem.scrollY.value === 0;
-    pageItem.isCanPullingDownToUp.value = Math.round(scrollHeight) + 0.5 >= Math.round(contentSize.height);
+    pageItem.isCanPullingDownToUp.value = Math.round(scrollHeight + 0.5) >= Math.round(contentSize.height);
   });
 }
 
@@ -384,19 +384,77 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
     .onBegin((e) => {
       pageItem.lastY.value = e.y;
       pageItem.isTouching.value = true;
+      console.log('==== onBegin');
     })
     .onUpdate((e) => {
-      const isPullingUpToDown = e.y - pageItem.lastY.value > 0;
-      // move sheet if top or scrollview or is closed state
-      if (isPullingUpToDown && pageItem.scrollY.value === 0) {
-        // current page changing translationY
-        pageItem.translationY.value = pageItem.preStatus.value + e.translationY - pageItem.touchingOffset.value;
-        // capture movement, but don't move sheet
-      } else if (!isPullingUpToDown && pageItem.isCanPullingDownToUp.value) {
-        pageItem.translationY.value = pageItem.preStatus.value + e.translationY - pageItem.touchingOffset.value;
-      } else {
-        // current page child scrollview nested scroll
+      const isPullingUpToDown = e.y - pageItem.lastY.value > 0; // 正在拖拽滑动的手势方向
+
+      const scrollNestedView = (extra: string) => {
+        console.log(
+          '==== onUpdate ' + extra + ' 滚动 isCanPullingUpToDown=',
+          pageItem.isCanPullingUpToDown.value,
+          'isCanPullingDownToUp=',
+          pageItem.isCanPullingDownToUp.value,
+          'isPullingUpToDown=',
+          isPullingUpToDown,
+          'lastY=',
+          pageItem.lastY.value,
+          'y=',
+          e.y,
+          'translationY=',
+          pageItem.translationY.value
+        );
+        if (pageItem.translationY.value !== pageItem.statusDefaultTranslationY) {
+          pageItem.translationY.value = pageItem.statusDefaultTranslationY;
+        }
         pageItem.touchingOffset.value = e.translationY;
+      };
+      if (isPullingUpToDown) {
+        if (
+          pageItem.isCanPullingUpToDown.value &&
+          Math.round(pageItem.translationY.value + 0.5) >= pageItem.statusDefaultTranslationY
+        ) {
+          console.log(
+            '==== onUpdate 顶部 位移 isCanPullingUpToDown=',
+            pageItem.isCanPullingUpToDown.value,
+            'isCanPullingDownToUp=',
+            pageItem.isCanPullingDownToUp.value,
+            'isPullingUpToDown=',
+            isPullingUpToDown,
+            'lastY=',
+            pageItem.lastY.value,
+            'y=',
+            e.y,
+            'translationY=',
+            pageItem.translationY.value
+          );
+          pageItem.translationY.value = pageItem.preStatus.value + e.translationY - pageItem.touchingOffset.value;
+        } else {
+          scrollNestedView('顶部');
+        }
+      } else if (!isPullingUpToDown) {
+        if (
+          pageItem.isCanPullingDownToUp.value &&
+          Math.round(pageItem.translationY.value - 0.5) <= pageItem.statusDefaultTranslationY
+        ) {
+          console.log(
+            '==== onUpdate 底部 位移 isCanPullingUpToDown=',
+            pageItem.isCanPullingUpToDown.value,
+            'isCanPullingDownToUp=',
+            pageItem.isCanPullingDownToUp.value,
+            'isPullingUpToDown=',
+            isPullingUpToDown,
+            'lastY=',
+            pageItem.lastY.value,
+            'y=',
+            e.y,
+            'translationY=',
+            pageItem.translationY.value
+          );
+          pageItem.translationY.value = pageItem.preStatus.value + e.translationY - pageItem.touchingOffset.value;
+        } else {
+          scrollNestedView('底部');
+        }
       }
 
       // simulate scroll if user continues touching screen
@@ -404,21 +462,35 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
         pageItem.preStatus.value !== pageItem.statusDefaultTranslationY &&
         pageItem.scrollY.value < pageItem.statusDefaultTranslationY
       ) {
+        console.log(
+          '==== onUpdate 模拟滚动 isCanPullingUpToDown=',
+          pageItem.isCanPullingUpToDown.value,
+          'isCanPullingDownToUp=',
+          pageItem.isCanPullingDownToUp.value,
+          'isPullingUpToDown=',
+          isPullingUpToDown,
+          'lastY=',
+          pageItem.lastY.value,
+          'y=',
+          e.y,
+          'translationY=',
+          pageItem.translationY.value
+        );
         // worklet 线程到 js线程无法透传 对象, 所以方法为内部函数
         runOnJS(simulateScroll)();
       }
     })
     .onEnd((e) => {
       // default on worklet thread, https://github.com/software-mansion/react-native-gesture-handler/issues/2300
-
+      console.log('==== onEnd');
       // close sheet if velocity or travel is good
-      if (e.translationY >= pageItem.statusHeaderTranslationY && pageItem.scrollY.value < 1) {
+      if (e.translationY >= pageItem.statusHeaderLoadingTranslationY && pageItem.scrollY.value < 1) {
         prePageItem.isEnabledGesture.value = false;
         pageItem.isEnabledGesture.value = false;
         nextPageItem.isEnabledGesture.value = false;
 
         pageItem.translationY.value = withTiming(
-          pageItem.statusHeaderTranslationY,
+          pageItem.statusHeaderLoadingTranslationY,
           { duration: pageItem.animatedDurationForGoToLoading },
           (finished) => {
             if (finished) {
@@ -427,15 +499,15 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
             }
           }
         );
-        pageItem.preStatus.value = pageItem.statusHeaderTranslationY;
+        pageItem.preStatus.value = pageItem.statusHeaderLoadingTranslationY;
         // start header loading
-      } else if (e.translationY <= pageItem.statusFooterTranslationY && pageItem.isCanPullingDownToUp.value) {
+      } else if (e.translationY <= pageItem.statusFooterLoadingTranslationY && pageItem.isCanPullingDownToUp.value) {
         prePageItem.isEnabledGesture.value = false;
         pageItem.isEnabledGesture.value = false;
         nextPageItem.isEnabledGesture.value = false;
 
         pageItem.translationY.value = withTiming(
-          pageItem.statusFooterTranslationY,
+          pageItem.statusFooterLoadingTranslationY,
           { duration: pageItem.animatedDurationForGoToLoading },
           (finished) => {
             if (finished) {
@@ -444,7 +516,7 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
             }
           }
         );
-        pageItem.preStatus.value = pageItem.statusHeaderTranslationY;
+        pageItem.preStatus.value = pageItem.statusHeaderLoadingTranslationY;
         // start header loading
       } else {
         pageItem.translationY.value = withTiming(pageItem.preStatus.value, {
