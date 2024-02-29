@@ -352,13 +352,13 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
   const pullToNextHelper = pullToNextHelperRef.current;
   const { prePageItem, nextPageItem } = pullToNextHelper.getPreAndNextPageItems(pageItem);
 
-  const simulateScroll = () => {
-    pageItem.nestedScrollViewRef?.current?.scrollTo?.({
-      x: undefined,
-      y: -pageItem.translationY.value + pageItem.statusDefaultTranslationY,
-      animated: false,
-    });
-  };
+  // const simulateScroll = () => {
+  //   pageItem.nestedScrollViewRef?.current?.scrollTo?.({
+  //     x: undefined,
+  //     y: -pageItem.translationY.value + pageItem.statusDefaultTranslationY,
+  //     animated: false,
+  //   });
+  // };
   const handleLoading = (goToNext: boolean) => {
     setTimeout(() => {
       finishLoading(goToNext);
@@ -456,29 +456,30 @@ function usePanGestureCustom(pageItem: PageItem, pullToNextHelperRef: React.Muta
           scrollNestedView('底部');
         }
       }
-
-      // simulate scroll if user continues touching screen
-      if (
-        pageItem.preStatus.value !== pageItem.statusDefaultTranslationY &&
-        pageItem.scrollY.value < pageItem.statusDefaultTranslationY
-      ) {
-        console.log(
-          '==== onUpdate 模拟滚动 isCanPullingUpToDown=',
-          pageItem.isCanPullingUpToDown.value,
-          'isCanPullingDownToUp=',
-          pageItem.isCanPullingDownToUp.value,
-          'isPullingUpToDown=',
-          isPullingUpToDown,
-          'lastY=',
-          pageItem.lastY.value,
-          'y=',
-          e.y,
-          'translationY=',
-          pageItem.translationY.value
-        );
-        // worklet 线程到 js线程无法透传 对象, 所以方法为内部函数
-        runOnJS(simulateScroll)();
-      }
+      //
+      // // simulate scroll if user continues touching screen
+      // if (
+      //   pageItem.preStatus.value !== pageItem.statusDefaultTranslationY &&
+      //   pageItem.scrollY.value < pageItem.statusDefaultTranslationY
+      // ) {
+      // console.log(
+      //   '==== onUpdate 模拟滚动 isCanPullingUpToDown=',
+      //   pageItem.isCanPullingUpToDown.value,
+      //   'isCanPullingDownToUp=',
+      //   pageItem.isCanPullingDownToUp.value,
+      //   'isPullingUpToDown=',
+      //   isPullingUpToDown,
+      //   'lastY=',
+      //   pageItem.lastY.value,
+      //   'y=',
+      //   e.y,
+      //   'translationY=',
+      //   pageItem.translationY.value
+      // );
+      // // worklet 线程到 js线程无法透传 对象, 所以方法为内部函数
+      // runOnJS(simulateScroll)();
+      // }
+      //
     })
     .onEnd((e) => {
       // default on worklet thread, https://github.com/software-mansion/react-native-gesture-handler/issues/2300
