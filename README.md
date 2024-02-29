@@ -1,6 +1,6 @@
 # react-native-fresh-refreshing
 
-Based on [react-native-fresh-refresh](https://github.com/4TWIGGERS/), research some new features.
+Based on [react-native-fresh-refresh](https://github.com/4TWIGGERS/react-native-fresh-refresh), research some new features.
 
 ## Preview
 
